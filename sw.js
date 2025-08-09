@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'family-reward-cache-v2';
+const CACHE_NAME = 'family-reward-cache-v2-1';
 const ASSETS = [
   './',
   './index.html',
