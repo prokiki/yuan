@@ -1,14 +1,16 @@
-const dateStr = new Date(serverTimestamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-console.log(dateStr); // 按北京时间输出
-const CACHE_NAME = 'family-reward-cache-v3-full-1';
+// sw.js
+const VERSION = new URL(self.location).searchParams.get('v') || 'dev';
+const CACHE_NAME = `family-reward-cache-${VERSION}`;
+
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './sw.js',
+  './sw.js?v=' + VERSION,   // 把自己也按版本缓存
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
+
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -30,7 +32,5 @@ self.addEventListener('fetch', (e) => {
   })());
 });
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
