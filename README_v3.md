@@ -1,37 +1,27 @@
-# v3 云同步加装包（Supabase）
+# 家庭激励系统 · PWA v3（云同步版）
 
-这是在 v2 基础上添加“云同步（Supabase）”的 **前端插件**，不改你现有的业务逻辑。
+这个包是可直接部署的 v3 完整版本：含“云同步”标签（Supabase）、PWA（离线缓存）、积分/奖励/时间券/周报等核心功能。
 
-## 快速集成
-1. 在 `index.html` 的 `<head>` 或 Chart.js 后添加：
-   ```html
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-   <script src="cloud_sync_addon.js"></script>
-   ```
-2. 将本目录中的 `cloud_sync_addon.js`、`schema.sql` 上传到你站点根目录（或任意可访问位置）。
-3. 在 Supabase 控制台中执行 `schema.sql` 创建表与 RLS 策略。
+## 一、部署
+- 方式 A：GitHub Pages（将整个文件夹上传到仓库根目录 → Settings → Pages → main/root）
+- 方式 B：Vercel/Netlify（拖拽上传或连 Git 自动部署）
+首次打开后，请 **强制刷新** 一次（确保 SW 安装）
 
-## 使用方法
-- 打开站点，顶部会出现 **“云同步”** 标签。
-- 第一次进入“云同步”页：
-  - 填写 `Supabase URL`（如 `https://xxx.supabase.co`）与 `Anon Key`（public），点击“保存配置”。
-  - “登录/注册”一个账号（邮箱+密码）。
-  - 设置一个 **家庭ID**（如 `yuan-home`）。
-  - 点击“推送本地到云”，随后可以在手机端**同样登录**并输入相同 `家庭ID`，点击“从云端拉取”。
-  - 勾选“自动同步（30秒）”可自动保持一致。
+## 二、Supabase 初始化
+1. 在 Supabase 新建项目，复制 **Project URL** 与 **anon public key**
+2. 打开网页 → 切到“云同步”页，在页面上填：URL 与 Anon Key → 保存配置（存到本地）
+3. 注册/登录（邮箱+密码）
+4. 设置一个家庭ID（如 `yuan-home`）
+5. 点击 **推送本地到云**（首行建立）
+6. 在另一台设备同样登录并填写相同家庭ID → **从云端拉取**
+7. 勾选 **自动同步（30 秒）**
 
-## 冲突策略
-- 默认：**Last-Write-Wins**。每次写入更新 `updated_at`，较新者覆盖。
-- 你也可以手动点“拉取/推送”指定方向。
-- 需要更细的“字段级合并”，可在插件中自定义（例如按日期合并 `records`）。
+## 三、数据库结构（schema_fixed.sql）
+见本包 `schema_fixed.sql`，已按 SELECT/INSERT/UPDATE/DELETE 分别创建策略（避免 42601 错误）。
 
-## 安全说明
-- 本插件使用 **Anon Key（公开）** + 用户登录（邮箱/密码）来控制操作权限。
-- 现有 `schema.sql` 策略允许任何**已登录用户**读写 `families_state`。若要限制到“家庭成员”，可额外建 `families` / `members` 关联表，并将 RLS 收紧。
-
-## 故障排查
-- **登录失败**：检查 Supabase 项目的 URL/Key 是否正确、网络是否可访问。
-- **拉取/推送失败**：确认已执行 `schema.sql`；检查 RLS/Policy 配置；确认已登录。
-- **自动同步不工作**：确保在“云同步”页勾选了开关，且浏览器页签保持活动（或使用 Service Worker + 定时策略做前台同步）。
+## 四、常见问题
+- 没看到“云同步”标签：强制刷新（Cmd+Shift+R）或 DevTools → Application → Unregister SW；确认 `index.html` 已包含 supabase-js
+- 推送/拉取失败：确认已执行 `schema_fixed.sql`，且已登录；检查 URL/Key 是否正确
+- 缓存更新不生效：修改 `sw.js` 的 `CACHE_NAME` 后重新部署，再强刷一次页面
 
 ——

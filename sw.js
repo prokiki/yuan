@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'family-reward-cache-v2-1';
+const CACHE_NAME = 'family-reward-cache-v3-full-1';
 const ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,6 @@ const ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
-
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -16,7 +15,6 @@ self.addEventListener('install', (e) => {
   })());
   self.skipWaiting();
 });
-
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
@@ -24,14 +22,12 @@ self.addEventListener('activate', (e) => {
     await self.clients.claim();
   })());
 });
-
 self.addEventListener('fetch', (e) => {
   e.respondWith((async () => {
     const cached = await caches.match(e.request);
     return cached || fetch(e.request);
   })());
 });
-
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();

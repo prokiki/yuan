@@ -1,6 +1,6 @@
 {
-  "name": "家庭激励系统 · 简易版（PWA v2）",
-  "short_name": "激励系统v2",
+  "name": "家庭激励系统 · PWA v3（云同步版）",
+  "short_name": "激励系统v3",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#111827",
