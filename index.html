@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<script>
+  const APP_VERSION = 'v3-2025-08-09'; // 每次发布改这里
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(APP_VERSION)}`);
+    });
+  }
+</script>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"/>
