@@ -5,48 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#111827"/>
-<title>家庭激励系统 · PWA v3（合并版）</title>
+<title>家庭激励系统 · v3（角色完整版）</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial; margin:0; background:#f7f7f8; color:#222;}
-  header{position:sticky; top:0; background:#fff; border-bottom:1px solid #e5e7eb; padding:12px 16px; z-index:10;}
-  header h1{margin:0; font-size:18px;}
-  .update-banner{display:none; background:#111; color:#fff; padding:8px 12px; text-align:center;}
-  .tabs{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
-  .tab{padding:8px 12px; border:1px solid #e5e7eb; background:#fff; border-radius:8px; cursor:pointer; font-size:14px;}
-  .tab.active{background:#111; color:#fff; border-color:#111;}
-  main{padding:16px; max-width:1100px; margin:0 auto;}
-  section{display:none;}
-  section.active{display:block;}
-  h2{font-size:18px; margin:12px 0;}
-  .grid{display:grid; gap:12px;}
-  .grid.cols-2{grid-template-columns:1fr 1fr;}
-  .card{background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:12px;}
-  table{width:100%; border-collapse:collapse; font-size:14px;}
-  th,td{border-bottom:1px solid #eee; padding:8px; text-align:left; vertical-align:top;}
-  tr:last-child td{border-bottom:none;}
-  input[type="text"], input[type="number"], input[type="password"], input[type="date"], select, textarea{width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; font-size:14px;}
-  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-  .btn{padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; background:#111; color:#fff; cursor:pointer; font-size:14px;}
-  .btn.secondary{background:#fff; color:#111;}
-  .muted{color:#6b7280; font-size:12px;}
-  .kpi{display:flex; gap:16px; flex-wrap:wrap;}
-  .kpi .item{background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; min-width:140px;}
+:root{--brand:#111;--kid:#2563eb}
+*{box-sizing:border-box} body{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial;margin:0;background:#f7f7f8;color:#222}
+header{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 16px;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:18px;margin:0} .pill{padding:2px 8px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;padding:8px 16px;background:#fff;border-bottom:1px solid #e5e7eb}
+.tab{padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer}
+.tab.active{background:var(--brand);color:#fff;border-color:var(--brand)} body.kid .tab.active{background:var(--kid);border-color:var(--kid)}
+main{padding:16px;max-width:1100px;margin:0 auto}
+section{display:none} section.active{display:block}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px}
+.grid{display:grid;gap:12px} .grid.cols-2{grid-template-columns:1fr 1fr}
+table{width:100%;border-collapse:collapse;font-size:14px} th,td{border-bottom:1px solid #eee;padding:8px;text-align:left}
+input,select{padding:8px;border:1px solid #e5e7eb;border-radius:8px} .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;background:var(--brand);color:#fff;cursor:pointer} .btn.secondary{background:#fff;color:#111}
+body.kid .btn{background:var(--kid)}
+.kpi{display:flex;gap:16px;flex-wrap:wrap} .kpi .item{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;min-width:140px}
+.update-banner{display:none;background:#111;color:#fff;padding:8px 12px}
+.muted{color:#6b7280;font-size:12px}
+.parentOnly{}
 </style>
 </head>
 <body>
 <header>
-  <div class="update-banner" id="updateBanner">
-    发现新版本，<button class="btn" id="refreshBtn" style="padding:4px 8px">点击更新</button>
+  <div class="row">
+    <h1>家庭激励系统 · v3（角色完整版）</h1>
+    <span class="pill" id="roleBadge">角色：家长</span>
   </div>
-  <h1>家庭激励系统 · PWA v3（合并版）</h1>
-  <div class="tabs" id="tabs"></div>
+  <div class="row">
+    <button class="btn secondary" id="btnKid">切到孩子端</button>
+    <button class="btn secondary" id="btnParent">切到家长端</button>
+    <div class="update-banner" id="updateBanner">发现新版本，<button class="btn" id="refreshBtn" style="padding:4px 8px">点击更新</button></div>
+  </div>
 </header>
 
+<div class="tabs" id="tabs"></div>
+
 <main>
-  <!-- 云同步 -->
   <section id="tab-cloud" class="active">
     <div class="grid cols-2">
       <div class="card">
@@ -79,32 +78,30 @@
       </div>
     </div>
     <div class="card mt16">
-      <h2>冲突处理</h2>
-      <p class="muted">默认 Last-Write-Wins；也可手动“拉取/推送”。</p>
-      <div class="row"><button class="btn secondary" id="btn_backup">下载本地备份 JSON</button></div>
+      <h2>家长 PIN</h2>
+      <div class="row">
+        <input id="pinNew" type="password" placeholder="设置或修改 PIN（4-6位）" style="max-width:200px"/>
+        <button class="btn" id="btn_set_pin">设置/修改 PIN</button>
+        <span class="muted">进入家长端、设置、云同步等敏感操作会要求 PIN</span>
+      </div>
+    </div>
+    <div class="card mt16">
+      <h2>审批模式</h2>
+      <label class="row"><input id="needApproval" type="checkbox"/> 开启“孩子打卡需家长审批”</label>
     </div>
   </section>
 
-  <!-- 今日任务 -->
   <section id="tab-today">
     <div class="grid cols-2">
       <div class="card">
         <h2>今日任务清单</h2>
-        <div class="row">
+        <div class="row parentOnly">
           <input id="newTaskName" placeholder="新增任务"/>
           <input id="newTaskPoints" type="number" placeholder="积分" min="1" style="max-width:120px"/>
-          <select id="newTaskType" style="max-width:140px">
-            <option value="基础任务">基础任务</option>
-            <option value="成长任务">成长任务</option>
-            <option value="自选任务">自选任务</option>
-          </select>
+          <select id="newTaskType" style="max-width:140px"><option>基础任务</option><option>成长任务</option><option>自选任务</option></select>
           <button class="btn" id="addTaskBtn">新增任务</button>
         </div>
-        <table id="taskTable"><thead><tr><th>完成</th><th>任务</th><th>类型</th><th>积分</th><th></th></tr></thead><tbody></tbody></table>
-        <div class="row mt16">
-          <button class="btn" id="saveTodayBtn">保存今日</button>
-          <span class="muted" id="todayInfo"></span>
-        </div>
+        <table id="taskTable"><thead><tr><th>完成</th><th>任务</th><th>类型</th><th>积分</th><th class="parentOnly">操作</th></tr></thead><tbody></tbody></table>
       </div>
       <div class="card">
         <h2>今日汇总</h2>
@@ -114,28 +111,29 @@
           <div class="item"><div class="muted">本周累计</div><div id="weekTotal" style="font-weight:600"></div></div>
         </div>
         <h3 class="mt16">今日完成记录</h3>
-        <table id="todayLog"><thead><tr><th>时间</th><th>任务</th><th>类型</th><th>积分</th><th>完成</th></tr></thead><tbody></tbody></table>
+        <table id="todayLog"><thead><tr><th>时间</th><th>任务</th><th>类型</th><th>积分</th><th>状态</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
   </section>
 
-  <!-- 奖励与兑换 -->
+  <section id="tab-approve">
+    <div class="card">
+      <h2>待审批打卡</h2>
+      <table id="approveTable"><thead><tr><th>时间</th><th>任务</th><th>孩子</th><th>操作</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
   <section id="tab-reward">
     <div class="grid cols-2">
       <div class="card">
         <h2>奖励菜单</h2>
-        <div class="row">
+        <div class="row parentOnly">
           <input id="rewardName" placeholder="奖励名称（如：30 分钟游戏券）"/>
           <input id="rewardCost" type="number" placeholder="所需积分" min="1" style="max-width:140px"/>
-          <select id="rewardType" style="max-width:140px">
-            <option value="数字类">数字类</option>
-            <option value="情感类">情感类</option>
-            <option value="体验类">体验类</option>
-            <option value="自由类">自由类</option>
-          </select>
+          <select id="rewardType" style="max-width:140px"><option>数字类</option><option>情感类</option><option>体验类</option><option>自由类</option></select>
           <button class="btn" id="addRewardBtn">新增奖励</button>
         </div>
-        <table id="rewardTable"><thead><tr><th>类别</th><th>奖励</th><th>所需积分</th><th></th></tr></thead><tbody></tbody></table>
+        <table id="rewardTable"><thead><tr><th>类别</th><th>奖励</th><th>所需积分</th><th class="parentOnly">操作</th></tr></thead><tbody></tbody></table>
       </div>
       <div class="card">
         <h2>积分兑换</h2>
@@ -154,12 +152,11 @@
     </div>
   </section>
 
-  <!-- 时间券 -->
   <section id="tab-coupons">
     <div class="grid cols-2">
       <div class="card">
         <h2>时间券库存</h2>
-        <table id="couponTable"><thead><tr><th>券名</th><th>库存</th><th></th></tr></thead><tbody></tbody></table>
+        <table id="couponTable"><thead><tr><th>券名</th><th>库存</th><th class="parentOnly">操作</th></tr></thead><tbody></tbody></table>
       </div>
       <div class="card">
         <h2>时间券预约/使用</h2>
@@ -174,7 +171,6 @@
     </div>
   </section>
 
-  <!-- 周报 -->
   <section id="tab-report">
     <div class="card">
       <h2>周报图表</h2>
@@ -183,7 +179,6 @@
     </div>
   </section>
 
-  <!-- 设置 -->
   <section id="tab-settings">
     <div class="grid cols-2">
       <div class="card">
@@ -213,11 +208,11 @@
 </main>
 
 <script>
-// === 版本化 SW 注册（发布时只改 APP_VERSION） ===
-const APP_VERSION = 'v3-2025-08-09';
+// 版本化 SW
+var APP_VERSION = "v3-roles-full-2025-08-09";
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(APP_VERSION)}`).then(reg => {
+    navigator.serviceWorker.register('./sw.js?v=' + encodeURIComponent(APP_VERSION)).then(reg => {
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
         nw.addEventListener('statechange', () => {
@@ -236,26 +231,18 @@ document.getElementById('refreshBtn').onclick = () => {
   window.location.reload();
 };
 
-// === 小工具 ===
+// 工具
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const todayStr = () => new Date().toISOString().slice(0,10);
-const weekStartStr = (d=new Date())=>{ const date=new Date(d); const day=date.getDay(); const diff=(day===0?-6:1)-day; date.setDate(date.getDate()+diff); return date.toISOString().slice(0,10); };
+function weekStartStr(d=new Date()){ const date=new Date(d); const day=date.getDay(); const diff=(day===0?-6:1)-day; date.setDate(date.getDate()+diff); return date.toISOString().slice(0,10); }
+function fmtCN(ts){ if(typeof ts==='string' && ts.includes('T') && !/[zZ]|[+\-]\d{2}:?\d{2}$/.test(ts)) ts=ts+'Z'; const d = ts instanceof Date ? ts : new Date(ts);
+  return new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d); }
 
-// 统一北京时间格式
-function fmtCN(ts) {
-  if (typeof ts === 'string' && ts.includes('T') && !/[zZ]|[+\-]\d{2}:?\d{2}$/.test(ts)) ts = ts + 'Z';
-  const d = ts instanceof Date ? ts : new Date(ts);
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone:'Asia/Shanghai', hour12:false,
-    year:'numeric', month:'2-digit', day:'2-digit',
-    hour:'2-digit', minute:'2-digit', second:'2-digit'
-  }).format(d);
-}
-
-// === 状态 ===
+// 状态
 const defaultState = {
-  settings:{ maxWeeklyRedeem:2, maxDailyPoints:30, maxDailyCoupons:1, couponExpireDays:14 },
+  settings:{ maxWeeklyRedeem:2, maxDailyPoints:30, maxDailyCoupons:1, couponExpireDays:14, needApproval:false },
+  members:[{id:'kid-001', name:'孩子', role:'kid'}],
   tasks:[
     {id:1,name:"按时完成语文作业",points:5,type:"基础任务"},
     {id:2,name:"按时完成数学作业",points:5,type:"基础任务"},
@@ -268,252 +255,267 @@ const defaultState = {
   records:{},
   redeem:[],
   coupons:{},
-  couponLogs:[]
+  couponLogs:[],
+  pending_checks:[]
 };
-function loadState(){
-  try{
-    const raw = localStorage.getItem("family_reward_state_pwa_v3");
-    if(!raw){ saveState(defaultState); return JSON.parse(JSON.stringify(defaultState)); }
-    return JSON.parse(raw);
-  }catch(e){ console.error(e); return JSON.parse(JSON.stringify(defaultState)); }
-}
-function saveState(s){ localStorage.setItem("family_reward_state_pwa_v3", JSON.stringify(s)); }
+function loadState(){ try{ const raw = localStorage.getItem('family_reward_state_pwa_v3'); if(!raw){ saveState(defaultState); return JSON.parse(JSON.stringify(defaultState)); } return JSON.parse(raw);}catch(e){ return JSON.parse(JSON.stringify(defaultState)); } }
+function saveState(s){ localStorage.setItem('family_reward_state_pwa_v3', JSON.stringify(s)); }
 let state = loadState();
 
-// === Tabs ===
-window.tabDefs = [
-  {id:"cloud", name:"云同步"},
-  {id:"today", name:"今日任务"},
-  {id:"reward", name:"积分与兑换"},
-  {id:"coupons", name:"时间券"},
-  {id:"report", name:"周报图表"},
-  {id:"settings", name:"设置/导入导出"}
+// 角色 + PIN
+let ROLE = localStorage.getItem('app_role') || (new URLSearchParams(location.search).get('role') || 'parent');
+let PIN_HASH = localStorage.getItem('parent_pin_hash') || '';
+function sha256(str){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(buf=>Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')); }
+function updateRoleUI(){
+  document.body.classList.toggle('kid', ROLE==='kid');
+  $('#roleBadge').textContent = '角色：' + (ROLE==='kid' ? '孩子' : '家长');
+  const kid = (ROLE==='kid');
+  $('#tab-cloud').style.display = kid ? 'none' : '';
+  $('#tab-settings').style.display = kid ? 'none' : '';
+  $('#tab-approve').style.display = kid ? 'none' : '';
+  $$('.parentOnly').forEach(el=> el.style.display = kid ? 'none' : '');
+}
+async function requirePIN(){ if(!PIN_HASH) return true; const input = prompt('请输入家长 PIN'); if(!input) return false; const h = await sha256(input); return h===PIN_HASH; }
+$('#btnKid').onclick = async ()=>{ ROLE='kid'; localStorage.setItem('app_role','kid'); updateRoleUI(); alert('已切到孩子端'); };
+$('#btnParent').onclick = async ()=>{ const ok = await requirePIN(); if(!ok) return alert('PIN 不正确'); ROLE='parent'; localStorage.setItem('app_role','parent'); updateRoleUI(); alert('已切到家长端'); };
+$('#btn_set_pin').onclick = async ()=>{ const p = $('#pinNew').value.trim(); if(!p || p.length<4 || p.length>6) return alert('PIN 需为 4-6 位'); const h = await sha256(p); localStorage.setItem('parent_pin_hash', h); PIN_HASH = h; alert('PIN 已设置/更新'); };
+
+// Tabs
+const TABS = [
+  {id:'cloud', name:'云同步'},
+  {id:'today', name:'今日任务'},
+  {id:'approve', name:'审批中心'},
+  {id:'reward', name:'积分与兑换'},
+  {id:'coupons', name:'时间券'},
+  {id:'report', name:'周报图表'},
+  {id:'settings', name:'设置/导入导出'}
 ];
 function renderTabs(){
-  const tabsEl = document.getElementById("tabs");
-  tabsEl.innerHTML = "";
-  window.tabDefs.forEach((t, i)=>{
-    const b = document.createElement("button");
-    b.className = "tab" + (i===0?" active":"");
-    b.textContent = t.name;
+  const el = $('#tabs'); el.innerHTML='';
+  TABS.forEach((t,i)=>{
+    const b = document.createElement('button'); b.className='tab'+(i===0?' active':''); b.textContent=t.name;
     b.onclick = ()=>{
-      $$(".tab").forEach(x=>x.classList.remove("active"));
-      b.classList.add("active");
-      $$("main section").forEach(sec=>sec.classList.remove("active"));
-      document.getElementById("tab-"+t.id).classList.add("active");
-      if(t.id==="report") renderCharts();
-      if(t.id==="coupons") renderCoupons();
-      if(t.id==="reward") { renderRewards(); renderRedeemLog(); }
-      if(t.id==="today") { renderTaskTable(); }
+      $$('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+      $$('main section').forEach(sec=>sec.classList.remove('active'));
+      document.getElementById('tab-'+t.id).classList.add('active');
+      if(t.id==='report') renderCharts();
+      if(t.id==='reward') { renderRewards(); renderRedeemLog(); }
+      if(t.id==='coupons') renderCoupons();
+      if(t.id==='today') renderTaskTable();
+      if(t.id==='approve') renderApprove();
     };
-    tabsEl.appendChild(b);
+    el.appendChild(b);
   });
 }
 
-// === 今日任务 ===
-function ensureRecord(date){ if(!state.records[date]) state.records[date] = {items:{}, total:0, ts: new Date().toISOString()}; }
+// 今日任务 + 审批
+function ensureRecord(date){ if(!state.records[date]) state.records[date] = {items:{}, total:0, ts:new Date().toISOString()}; }
 function renderTaskTable(){
-  const tb = $("#taskTable tbody");
-  tb.innerHTML = "";
-  const date = todayStr();
-  ensureRecord(date);
+  const tb = document.querySelector('#taskTable tbody'); tb.innerHTML='';
+  const date = todayStr(); ensureRecord(date);
   state.tasks.forEach(task=>{
-    const tr = document.createElement("tr");
     const rec = state.records[date].items[task.id] || {done:false, ts:null};
-    tr.innerHTML = `
-      <td><input type="checkbox" ${rec.done?"checked":""} data-id="${task.id}" class="doneBox"/></td>
-      <td>${task.name}</td>
-      <td>${task.type}</td>
-      <td>${task.points}</td>
-      <td><button class="btn secondary" data-id="${task.id}" data-act="del">删除</button></td>`;
+    const disabled = (ROLE==='kid' && state.settings.needApproval);
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td><input type="checkbox" class="doneBox" data-id="'+task.id+'" '+(rec.done?'checked':'')+' '+(disabled?'disabled':'')+' /></td>' +
+                   '<td>'+task.name+'</td><td>'+task.type+'</td><td>'+task.points+'</td>' +
+                   '<td class="parentOnly"><button class="btn secondary" data-id="'+task.id+'" data-act="del">删除</button></td>';
     tb.appendChild(tr);
   });
-  $("#todayDate").textContent = todayStr();
+  document.getElementById('todayDate').textContent = todayStr();
   recomputeToday();
 }
 function recomputeToday(){
   const date = todayStr(); ensureRecord(date);
   let total = 0;
-  state.tasks.forEach(t=>{
-    const rec = state.records[date].items[t.id];
-    if(rec && rec.done) total += t.points;
-  });
-  const cap = Number(state.settings.maxDailyPoints||30);
-  if(total>cap) total = cap;
+  state.tasks.forEach(t=>{ const rec = state.records[date].items[t.id]; if(rec && rec.done) total += t.points; });
+  const cap = Number(state.settings.maxDailyPoints||30); if(total>cap) total=cap;
   state.records[date].total = total;
-  const tb = $("#todayLog tbody"); tb.innerHTML = "";
+  const tb = document.querySelector('#todayLog tbody'); tb.innerHTML='';
   state.tasks.forEach(t=>{
     const rec = state.records[date].items[t.id] || {done:false, ts:null};
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${rec.ts?fmtCN(rec.ts):""}</td><td>${t.name}</td><td>${t.type}</td><td>${t.points}</td><td>${rec.done?"✔":""}</td>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+(rec.ts?fmtCN(rec.ts):'')+'</td><td>'+t.name+'</td><td>'+t.type+'</td><td>'+t.points+'</td><td>'+(rec.done?'已完成':'')+'</td>';
     tb.appendChild(tr);
   });
-  $("#todayTotal").textContent = total;
-  $("#weekTotal").textContent = weekTotal(new Date());
-  $("#availablePoints").textContent = availablePoints();
+  document.getElementById('todayTotal').textContent = total;
+  document.getElementById('weekTotal').textContent = weekTotal(new Date());
+  document.getElementById('availablePoints').textContent = availablePoints();
 }
-document.addEventListener("change",(e)=>{
-  if(e.target.classList.contains("doneBox")){
+document.addEventListener('change',(e)=>{
+  if(e.target.classList.contains('doneBox')){
     const id = Number(e.target.dataset.id);
-    const date = todayStr();
-    ensureRecord(date);
-    state.records[date].items[id] = state.records[date].items[id] || {done:false, ts:null};
-    state.records[date].items[id].done = e.target.checked;
-    state.records[date].items[id].ts = new Date().toISOString();
-    recomputeToday();
+    const date = todayStr(); ensureRecord(date);
+    if(state.settings.needApproval && ROLE==='kid'){
+      state.pending_checks.push({id:crypto.randomUUID(), kid:'孩子', taskId:id, ts:new Date().toISOString()});
+      alert('已提交家长审批');
+    }else{
+      state.records[date].items[id] = state.records[date].items[id] || {done:false, ts:null};
+      state.records[date].items[id].done = e.target.checked;
+      state.records[date].items[id].ts = new Date().toISOString();
+      recomputeToday();
+    }
+    saveState(state);
   }
 });
-document.getElementById("addTaskBtn").onclick = ()=>{
-  const name = document.getElementById("newTaskName").value.trim();
-  const pts = Number(document.getElementById("newTaskPoints").value);
-  const type = document.getElementById("newTaskType").value;
-  if(!name || !pts){ alert("请填写任务名称与积分"); return; }
-  const id = (state.tasks.reduce((m,t)=>Math.max(m,t.id),0) || 0) + 1;
-  state.tasks.push({id,name,points:pts,type});
-  document.getElementById("newTaskName").value=""; document.getElementById("newTaskPoints").value="";
-  renderTaskTable(); saveState(state);
-};
-document.getElementById("taskTable").addEventListener("click",(e)=>{
-  if(e.target.dataset.act==="del"){
+document.getElementById('taskTable').addEventListener('click',(e)=>{
+  if(e.target.dataset.act==='del'){
     const id = Number(e.target.dataset.id);
     state.tasks = state.tasks.filter(t=>t.id!==id);
     Object.values(state.records).forEach(r=>{ if(r.items[id]) delete r.items[id]; });
     renderTaskTable(); saveState(state);
   }
 });
-document.getElementById("saveTodayBtn").onclick = ()=>{ saveState(state); document.getElementById("todayInfo").textContent = "今日记录已保存"; setTimeout(()=>document.getElementById("todayInfo").textContent="",1500); };
+document.getElementById('addTaskBtn').onclick = ()=>{
+  const name = document.getElementById('newTaskName').value.trim();
+  const pts = Number(document.getElementById('newTaskPoints').value);
+  const type = document.getElementById('newTaskType').value;
+  if(!name || !pts) return alert('请填写任务名称与积分');
+  const id = (state.tasks.reduce((m,t)=>Math.max(m,t.id),0)||0)+1;
+  state.tasks.push({id,name,points:pts,type});
+  document.getElementById('newTaskName').value=''; document.getElementById('newTaskPoints').value='';
+  renderTaskTable(); saveState(state);
+};
 
 function weekTotal(d){
   const start = new Date(weekStartStr(d));
-  let sum = 0;
-  for(let i=0;i<7;i++){
-    const dt = new Date(start); dt.setDate(start.getDate()+i);
-    const key = dt.toISOString().slice(0,10);
-    if(state.records[key]) sum += (state.records[key].total||0);
-  }
+  let sum=0; for(let i=0;i<7;i++){ const dt=new Date(start); dt.setDate(start.getDate()+i); const key=dt.toISOString().slice(0,10); if(state.records[key]) sum += (state.records[key].total||0); }
   return sum;
 }
-function availablePoints(){
-  let earned = 0; Object.values(state.records).forEach(r=>earned+= (r.total||0));
-  let spent = 0; state.redeem.forEach(r=>spent += (r.cost||0));
-  return Math.max(0, earned - spent);
-}
+function availablePoints(){ let earned=0; Object.values(state.records).forEach(r=>earned+=(r.total||0)); let spent=0; state.redeem.forEach(r=>spent+=(r.cost||0)); return Math.max(0, earned-spent); }
 
-// === 奖励与兑换 ===
-function renderRewards(){
-  const tb = document.getElementById("rewardTable").querySelector("tbody"); tb.innerHTML="";
-  state.rewards.forEach(r=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${r.type}</td><td>${r.name}${r.coupon?'（时间券）':''}</td><td>${r.cost}</td>
-      <td><button class="btn secondary" data-id="${r.id}" data-act="del-reward">删除</button></td>`;
+// 审批中心
+function renderApprove(){
+  const tb = document.querySelector('#approveTable tbody'); tb.innerHTML='';
+  (state.pending_checks||[]).slice().reverse().forEach(row=>{
+    const t = state.tasks.find(x=>x.id===row.taskId);
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+fmtCN(row.ts)+'</td><td>'+(t?t.name:row.taskId)+'</td><td>'+(row.kid||'孩子')+'</td>' +
+      '<td><button class="btn" data-id="'+row.id+'" data-act="approve">通过</button> <button class="btn secondary" data-id="'+row.id+'" data-act="reject">驳回</button></td>';
     tb.appendChild(tr);
   });
-  const sel = document.getElementById("rewardSelect"); sel.innerHTML="";
-  state.rewards.forEach(r=>{ const opt = document.createElement("option"); opt.value = r.id; opt.textContent = `[${r.type}] ${r.name}（${r.cost} 分）`; sel.appendChild(opt); });
-  document.getElementById("availablePoints").textContent = availablePoints();
-  document.getElementById("redeemCount").textContent = redeemCountThisWeek();
 }
-function redeemCountThisWeek(){
-  const ws = weekStartStr(); return state.redeem.filter(r=>r.weekStart===ws).length;
+document.getElementById('approveTable').addEventListener('click',(e)=>{
+  const id = e.target.dataset.id, act = e.target.dataset.act;
+  if(!id || !act) return;
+  const it = (state.pending_checks||[]).find(x=>x.id===id);
+  if(!it) return;
+  if(act==='approve'){
+    const date = todayStr(); ensureRecord(date);
+    state.records[date].items[it.taskId] = {done:true, ts:new Date().toISOString()};
+    state.pending_checks = state.pending_checks.filter(x=>x.id!==id);
+    saveState(state); renderApprove(); renderTaskTable();
+  }else if(act==='reject'){
+    state.pending_checks = state.pending_checks.filter(x=>x.id!==id);
+    saveState(state); renderApprove();
+  }
+});
+
+// 奖励 / 兑换
+function renderRewards(){
+  const tb = document.querySelector('#rewardTable tbody'); tb.innerHTML='';
+  state.rewards.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+r.type+'</td><td>'+r.name+(r.coupon?'（时间券）':'')+'</td><td>'+r.cost+'</td>' +
+                   '<td class="parentOnly"><button class="btn secondary" data-id="'+r.id+'" data-act="del-reward">删除</button></td>';
+    tb.appendChild(tr);
+  });
+  const sel = document.getElementById('rewardSelect'); sel.innerHTML='';
+  state.rewards.forEach(r=>{ const o=document.createElement('option'); o.value=r.id; o.textContent='['+r.type+'] '+r.name+'（'+r.cost+' 分）'; sel.appendChild(o); });
+  document.getElementById('availablePoints').textContent = availablePoints();
+  document.getElementById('redeemCount').textContent = state.redeem.filter(r=>r.weekStart===weekStartStr()).length;
 }
-document.getElementById("addRewardBtn").onclick = ()=>{
-  const name = document.getElementById("rewardName").value.trim();
-  const cost = Number(document.getElementById("rewardCost").value);
-  const type = document.getElementById("rewardType").value;
-  if(!name || !cost){ alert("请填写奖励名称与所需积分"); return; }
-  const id = (state.rewards.reduce((m,t)=>Math.max(m,t.id),0) || 0) + 1;
-  const coupon = /券/.test(name);
-  state.rewards.push({id,type,name,cost,coupon});
-  document.getElementById("rewardName").value=""; document.getElementById("rewardCost").value="";
-  renderRewards(); saveState(state);
-};
-document.getElementById("rewardTable").addEventListener("click",(e)=>{
-  if(e.target.dataset.act==="del-reward"){
+document.getElementById('rewardTable').addEventListener('click',(e)=>{
+  if(e.target.dataset.act==='del-reward'){
     const id = Number(e.target.dataset.id);
     state.rewards = state.rewards.filter(r=>r.id!==id);
     renderRewards(); saveState(state);
   }
 });
-document.getElementById("redeemBtn").onclick = ()=>{
-  const rid = Number(document.getElementById("rewardSelect").value);
-  const r = state.rewards.find(x=>x.id===rid);
-  if(!r) return;
-  const avail = availablePoints();
-  if(avail < r.cost){ alert("积分不足"); return; }
+document.getElementById('addRewardBtn').onclick = ()=>{
+  const name = document.getElementById('rewardName').value.trim();
+  const cost = Number(document.getElementById('rewardCost').value);
+  const type = document.getElementById('rewardType').value;
+  if(!name || !cost) return alert('请填写奖励名称与所需积分');
+  const id = (state.rewards.reduce((m,t)=>Math.max(m,t.id),0)||0)+1;
+  const coupon = /券/.test(name);
+  state.rewards.push({id,type,name,cost,coupon});
+  document.getElementById('rewardName').value=''; document.getElementById('rewardCost').value='';
+  renderRewards(); saveState(state);
+};
+document.getElementById('redeemBtn').onclick = ()=>{
+  const rid = Number(document.getElementById('rewardSelect').value);
+  const r = state.rewards.find(x=>x.id===rid); if(!r) return;
+  const avail = availablePoints(); if(avail < r.cost) return alert('积分不足');
   const limit = Number(state.settings.maxWeeklyRedeem||2);
-  if(redeemCountThisWeek() >= limit){ alert("本周兑换次数已达上限"); return; }
-  const reserve = document.getElementById("reserveDate").value || "";
-  state.redeem.push({ts: new Date().toISOString(), weekStart: weekStartStr(), name:r.name, cost:r.cost, reserve});
+  const cnt = state.redeem.filter(x=>x.weekStart===weekStartStr()).length;
+  if(cnt >= limit) return alert('本周兑换次数已达上限');
+  const reserve = document.getElementById('reserveDate').value || '';
+  state.redeem.push({ts:new Date().toISOString(), weekStart:weekStartStr(), name:r.name, cost:r.cost, reserve});
   if(r.coupon){
     if(!state.coupons[r.name]) state.coupons[r.name] = {count:0, reservations:[]};
     state.coupons[r.name].count += 1;
-    if(reserve) state.coupons[r.name].reservations.push({name:r.name, date:reserve, ts: new Date().toISOString()});
-    alert(`已兑换时间券：${r.name}（库存 +1）` + (reserve?`，预约日：${reserve}`:""));
+    if(reserve) state.coupons[r.name].reservations.push({name:r.name, date:reserve, ts:new Date().toISOString()});
+    alert('已兑换时间券：'+r.name+'（库存 +1）'+(reserve?('，预约日：'+reserve):''));
   }else{
-    alert(`已兑换非券类奖励：${r.name}（请线下执行）`);
+    alert('已兑换非券类奖励：'+r.name+'（请线下执行）');
   }
   renderRewards(); renderRedeemLog(); renderCoupons(); saveState(state);
 };
 function renderRedeemLog(){
-  const tb = document.getElementById("redeemLog").querySelector("tbody"); tb.innerHTML="";
+  const tb = document.querySelector('#redeemLog tbody'); tb.innerHTML='';
   state.redeem.slice().reverse().forEach(row=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${fmtCN(row.ts)}</td><td>${row.name}</td><td>${row.cost}</td><td>${row.reserve||""}</td>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+fmtCN(row.ts)+'</td><td>'+row.name+'</td><td>'+row.cost+'</td><td>'+(row.reserve||'')+'</td>';
     tb.appendChild(tr);
   });
 }
 
-// === 时间券 ===
+// 时间券
 function renderCoupons(){
-  ["15 分钟游戏券","30 分钟游戏券"].forEach(n=>{ if(!state.coupons[n]) state.coupons[n] = {count:0, reservations:[]}; });
-  const tb = document.getElementById("couponTable").querySelector("tbody"); tb.innerHTML="";
+  ['15 分钟游戏券','30 分钟游戏券'].forEach(n=>{ if(!state.coupons[n]) state.coupons[n] = {count:0, reservations:[]}; });
+  const tb = document.querySelector('#couponTable tbody'); tb.innerHTML='';
   Object.keys(state.coupons).forEach(name=>{
-    const tr = document.createElement("tr");
     const count = state.coupons[name].count||0;
-    tr.innerHTML = `<td>${name}</td><td>${count}</td>
-      <td>
-        <button class="btn secondary" data-name="${name}" data-act="add1">+1</button>
-        <button class="btn secondary" data-name="${name}" data-act="sub1">-1</button>
-      </td>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+name+'</td><td>'+count+'</td>' +
+      '<td class="parentOnly"><button class="btn secondary" data-name="'+name+'" data-act="add1">+1</button> ' +
+      '<button class="btn secondary" data-name="'+name+'" data-act="sub1">-1</button></td>';
     tb.appendChild(tr);
   });
-  const sel = document.getElementById("couponSelect"); sel.innerHTML="";
-  Object.keys(state.coupons).forEach(name=>{
-    const opt = document.createElement("option");
-    opt.value = name; opt.textContent = `${name}（库存 ${state.coupons[name].count||0}）`;
-    sel.appendChild(opt);
-  });
+  const sel = document.getElementById('couponSelect'); sel.innerHTML='';
+  Object.keys(state.coupons).forEach(name=>{ const o=document.createElement('option'); o.value=name; o.textContent=name+'（库存 '+(state.coupons[name].count||0)+'）'; sel.appendChild(o); });
   renderCouponLog();
 }
-document.getElementById("couponTable").addEventListener("click",(e)=>{
-  const act = e.target.dataset.act; const name = e.target.dataset.name;
-  if(!act || !name) return;
-  if(act==="add1") state.coupons[name].count = (state.coupons[name].count||0)+1;
-  if(act==="sub1") state.coupons[name].count = Math.max(0,(state.coupons[name].count||0)-1);
+document.getElementById('couponTable').addEventListener('click',(e)=>{
+  const act=e.target.dataset.act, name=e.target.dataset.name;
+  if(!act||!name) return;
+  if(act==='add1') state.coupons[name].count = (state.coupons[name].count||0)+1;
+  if(act==='sub1') state.coupons[name].count = Math.max(0,(state.coupons[name].count||0)-1);
   renderCoupons(); saveState(state);
 });
-document.getElementById("useCouponBtn").onclick = ()=>{
-  const name = document.getElementById("couponSelect").value;
-  const d = document.getElementById("couponDate").value || todayStr();
+document.getElementById('useCouponBtn').onclick = ()=>{
+  const name = document.getElementById('couponSelect').value;
+  const d = document.getElementById('couponDate').value || todayStr();
   const limit = Number(state.settings.maxDailyCoupons||1);
   const usedToday = state.couponLogs.filter(x=>x.ts.slice(0,10)===d).length;
-  if(usedToday >= limit){ alert("当天使用次数已达上限"); return; }
-  if((state.coupons[name]?.count||0) <= 0){ alert("库存不足"); return; }
+  if(usedToday >= limit) return alert('当天使用次数已达上限');
+  if((state.coupons[name]?.count||0) <= 0) return alert('库存不足');
   state.coupons[name].count -= 1;
   state.couponLogs.push({ts:new Date().toISOString(), name, reserve:d});
   saveState(state);
   renderCoupons(); renderCouponLog();
 };
 function renderCouponLog(){
-  const tb = document.getElementById("couponLog").querySelector("tbody"); tb.innerHTML="";
+  const tb = document.querySelector('#couponLog tbody'); tb.innerHTML='';
   state.couponLogs.slice().reverse().forEach(row=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${fmtCN(row.ts)}</td><td>${row.name}</td><td>${row.reserve||""}</td>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+fmtCN(row.ts)+'</td><td>'+row.name+'</td><td>'+(row.reserve||'')+'</td>';
     tb.appendChild(tr);
   });
 }
 
-// === 周报 ===
+// 周报
 let chart1=null, chart2=null;
 function renderCharts(){
   const labels=[], dataScores=[], taskCounts=[];
@@ -536,49 +538,38 @@ function renderCharts(){
   }
   const ctx1 = document.getElementById('chartWeeklyScore').getContext('2d');
   const ctx2 = document.getElementById('chartTaskCount').getContext('2d');
-  if(chart1) chart1.destroy();
-  if(chart2) chart2.destroy();
+  if(chart1) chart1.destroy(); if(chart2) chart2.destroy();
   chart1 = new Chart(ctx1, { type:'line', data:{ labels, datasets:[{ label:'周总分', data:dataScores }] }, options:{ responsive:true, maintainAspectRatio:false }});
   chart2 = new Chart(ctx2, { type:'bar', data:{ labels, datasets:[{ label:'任务完成次数', data:taskCounts }] }, options:{ responsive:true, maintainAspectRatio:false }});
 }
 
-// === 设置 / 导入导出 ===
-document.getElementById("saveSettingsBtn").onclick = ()=>{
-  state.settings.maxWeeklyRedeem = Number(document.getElementById("maxWeeklyRedeem").value||2);
-  state.settings.maxDailyPoints = Number(document.getElementById("maxDailyPoints").value||30);
-  state.settings.maxDailyCoupons = Number(document.getElementById("maxDailyCoupons").value||1);
-  state.settings.couponExpireDays = Number(document.getElementById("couponExpireDays").value||14);
+// 设置 / 导入导出
+document.getElementById('saveSettingsBtn').onclick = ()=>{
+  state.settings.maxWeeklyRedeem = Number(document.getElementById('maxWeeklyRedeem').value||2);
+  state.settings.maxDailyPoints = Number(document.getElementById('maxDailyPoints').value||30);
+  state.settings.maxDailyCoupons = Number(document.getElementById('maxDailyCoupons').value||1);
+  state.settings.couponExpireDays = Number(document.getElementById('couponExpireDays').value||14);
+  state.settings.needApproval = document.getElementById('needApproval').checked;
   saveState(state);
-  document.getElementById("settingsInfo").textContent = "设置已保存"; setTimeout(()=>document.getElementById("settingsInfo").textContent="",1500);
+  document.getElementById('settingsInfo').textContent = '设置已保存'; setTimeout(()=>document.getElementById('settingsInfo').textContent='',1500);
   recomputeToday(); renderRewards(); renderCoupons();
 };
-document.getElementById("exportBtn").onclick = ()=>{
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "family_reward_backup_v3.json"; a.click();
-  URL.revokeObjectURL(url);
+document.getElementById('exportBtn').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href = url; a.download = 'family_reward_backup_v3_roles_full.json'; a.click(); URL.revokeObjectURL(url);
 };
-document.getElementById("importBtn").onclick = ()=>{
-  const f = document.getElementById("importFile").files[0];
-  if(!f){ alert("请选择JSON文件"); return; }
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const obj = JSON.parse(reader.result);
-      state = Object.assign({}, defaultState, obj);
-      saveState(state);
-      init();
-      alert("导入成功");
-    }catch(e){ alert("导入失败："+e.message); }
-  };
-  reader.readAsText(f);
+document.getElementById('importBtn').onclick = ()=>{
+  const f = document.getElementById('importFile').files[0]; if(!f) return alert('请选择JSON文件');
+  const r = new FileReader();
+  r.onload = ()=>{ try{ const obj=JSON.parse(r.result); state = Object.assign({}, defaultState, obj); saveState(state); init(); alert('导入成功'); }catch(e){ alert('导入失败：'+e.message); } };
+  r.readAsText(f);
 };
-document.getElementById("resetBtn").onclick = ()=>{
-  if(confirm("确定清空所有数据？此操作不可撤销")){ localStorage.removeItem("family_reward_state_pwa_v3"); state = JSON.parse(JSON.stringify(defaultState)); init(); }
+document.getElementById('resetBtn').onclick = ()=>{
+  if(confirm('确定清空所有数据？此操作不可撤销')){ localStorage.removeItem('family_reward_state_pwa_v3'); state = JSON.parse(JSON.stringify(defaultState)); init(); }
 };
 
-// === 云同步（Supabase）===
+// ======= 云同步（Supabase） =======
 let sb = null;
 const $email = document.getElementById('sb_email');
 const $pass = document.getElementById('sb_password');
@@ -594,9 +585,7 @@ function initSupabase(){
   const anon = localStorage.getItem('sb_anon') || $anon.value.trim();
   if(!url || !anon){ return; }
   sb = window.supabase.createClient(url, anon);
-  sb.auth.getUser().then(({data})=>{
-    if(data && data.user){ $status.textContent = '已登录：' + (data.user.email||''); }
-  });
+  sb.auth.getUser().then(({data})=>{ if(data && data.user){ $status.textContent = '已登录：' + (data.user.email||''); } });
 }
 document.getElementById('btn_save_cfg').onclick = ()=>{
   localStorage.setItem('sb_url', $url.value.trim());
@@ -629,6 +618,7 @@ document.getElementById('sb_signout').onclick = async ()=>{
 };
 
 async function pullFromCloud(){
+  if(ROLE==='kid'){ alert('孩子端不允许云拉取'); return; }
   if(!sb) initSupabase();
   const fid = ($family.value.trim() || localStorage.getItem('family_id') || '').trim();
   if(!fid){ alert('请先设置家庭ID'); return; }
@@ -638,10 +628,7 @@ async function pullFromCloud(){
   const serverUpdated = new Date(data.updated_at).getTime();
   const localMeta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
   const localUpdated = Number(localMeta.updated_at||0);
-  if(serverUpdated <= localUpdated){
-    $cloudInfo.textContent = '云端较旧/相同，无需覆盖';
-    return;
-  }
+  if(serverUpdated <= localUpdated){ $cloudInfo.textContent = '云端较旧/相同，无需覆盖'; return; }
   state = Object.assign({}, state, data.state_json);
   saveState(state);
   localStorage.setItem('cloud_meta', JSON.stringify({family_id:fid, updated_at:serverUpdated}));
@@ -649,6 +636,7 @@ async function pullFromCloud(){
   $cloudInfo.textContent = '已从云端拉取并覆盖本地（'+ fmtCN(data.updated_at) +'）';
 }
 async function pushToCloud(){
+  if(ROLE==='kid'){ alert('孩子端不允许云推送'); return; }
   if(!sb) initSupabase();
   const fid = ($family.value.trim() || localStorage.getItem('family_id') || '').trim();
   if(!fid){ alert('请先设置家庭ID'); return; }
@@ -661,33 +649,31 @@ async function pushToCloud(){
 }
 document.getElementById('btn_pull').onclick = pullFromCloud;
 document.getElementById('btn_push').onclick = pushToCloud;
-document.getElementById('btn_backup').onclick = ()=>{
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob); const a = document.createElement('a');
-  a.href = url; a.download = 'family_reward_backup_v3.json'; a.click(); URL.revokeObjectURL(url);
-};
 setInterval(async ()=>{
-  if(!$auto.checked) return;
-  try{ await pullFromCloud(); await pushToCloud(); }catch(e){}
+  if(ROLE==='parent' && ($auto?.checked)){
+    try{ await pullFromCloud(); await pushToCloud(); }catch(e){}
+  }
 }, 30000);
 
-// === Init ===
+// 启动
 function init(){
   renderTabs();
-  renderTaskTable();
-  renderRewards();
-  renderRedeemLog();
-  renderCoupons();
-  document.getElementById("maxWeeklyRedeem").value = state.settings.maxWeeklyRedeem;
-  document.getElementById("maxDailyPoints").value = state.settings.maxDailyPoints;
-  document.getElementById("maxDailyCoupons").value = state.settings.maxDailyCoupons;
-  document.getElementById("couponExpireDays").value = state.settings.couponExpireDays;
-  document.getElementById("todayDate").textContent = todayStr();
+  updateRoleUI();
+  document.getElementById('maxWeeklyRedeem').value = state.settings.maxWeeklyRedeem;
+  document.getElementById('maxDailyPoints').value = state.settings.maxDailyPoints;
+  document.getElementById('maxDailyCoupons').value = state.settings.maxDailyCoupons;
+  document.getElementById('couponExpireDays').value = state.settings.couponExpireDays;
+  document.getElementById('needApproval').checked = !!state.settings.needApproval;
+
+  document.getElementById('todayDate').textContent = todayStr();
+
+  // 云配置回填
   document.getElementById('sb_url').value = localStorage.getItem('sb_url') || '';
   document.getElementById('sb_anon').value = localStorage.getItem('sb_anon') || '';
   document.getElementById('family_id').value = localStorage.getItem('family_id') || '';
   document.getElementById('sb_email').value = localStorage.getItem('sb_email') || '';
-  document.getElementById('auto_sync').checked = (localStorage.getItem('auto_sync') === '1');
+
+  renderTaskTable(); renderRewards(); renderRedeemLog(); renderCoupons();
 }
 init();
 </script>
