@@ -1,16 +1,14 @@
-// sw.js
+
 const VERSION = new URL(self.location).searchParams.get('v') || 'dev';
 const CACHE_NAME = `family-reward-cache-${VERSION}`;
-
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './sw.js?v=' + VERSION,   // 把自己也按版本缓存
+  './sw.js?v=' + VERSION,
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
-
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
