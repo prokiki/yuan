@@ -28,6 +28,8 @@ body.kid .btn{background:var(--kid)}
 .update-banner{display:none;background:#111;color:#fff;padding:8px 12px}
 .muted{color:#6b7280;font-size:12px}
 .parentOnly{}
+body.kid .parentOnly{display:none !important}
+
 </style>
 </head>
 <body>
@@ -324,6 +326,8 @@ function renderTaskTable(){
   });
   document.getElementById('todayDate').textContent = todayStr();
   recomputeToday();
+
+  updateRoleUI();
 }
 function recomputeToday(){
   const date = todayStr(); ensureRecord(date);
@@ -358,7 +362,7 @@ document.addEventListener('change',(e)=>{
     saveState(state);
   }
 });
-document.getElementById('taskTable').addEventListener('click',(e)=>{
+document.getElementById('taskTable').addEventListener('click',(e)=>{ if(ROLE==='kid'){ alert('孩子端无权删除任务'); return; }
   if(e.target.dataset.act==='del'){
     const id = Number(e.target.dataset.id);
     state.tasks = state.tasks.filter(t=>t.id!==id);
@@ -366,7 +370,7 @@ document.getElementById('taskTable').addEventListener('click',(e)=>{
     renderTaskTable(); saveState(state);
   }
 });
-document.getElementById('addTaskBtn').onclick = ()=>{
+document.getElementById('addTaskBtn').onclick = ()=>{ if(ROLE==='kid'){ alert('孩子端无权新增任务'); return; }
   const name = document.getElementById('newTaskName').value.trim();
   const pts = Number(document.getElementById('newTaskPoints').value);
   const type = document.getElementById('newTaskType').value;
@@ -425,14 +429,14 @@ function renderRewards(){
   document.getElementById('availablePoints').textContent = availablePoints();
   document.getElementById('redeemCount').textContent = state.redeem.filter(r=>r.weekStart===weekStartStr()).length;
 }
-document.getElementById('rewardTable').addEventListener('click',(e)=>{
+document.getElementById('rewardTable').addEventListener('click',(e)=>{ if(ROLE==='kid'){ alert('孩子端无权删除奖励'); return; }
   if(e.target.dataset.act==='del-reward'){
     const id = Number(e.target.dataset.id);
     state.rewards = state.rewards.filter(r=>r.id!==id);
     renderRewards(); saveState(state);
   }
 });
-document.getElementById('addRewardBtn').onclick = ()=>{
+document.getElementById('addRewardBtn').onclick = ()=>{ if(ROLE==='kid'){ alert('孩子端无权新增奖励'); return; }
   const name = document.getElementById('rewardName').value.trim();
   const cost = Number(document.getElementById('rewardCost').value);
   const type = document.getElementById('rewardType').value;
@@ -487,7 +491,7 @@ function renderCoupons(){
   Object.keys(state.coupons).forEach(name=>{ const o=document.createElement('option'); o.value=name; o.textContent=name+'（库存 '+(state.coupons[name].count||0)+'）'; sel.appendChild(o); });
   renderCouponLog();
 }
-document.getElementById('couponTable').addEventListener('click',(e)=>{
+document.getElementById('couponTable').addEventListener('click',(e)=>{ if(ROLE==='kid'){ alert('孩子端无权更改时间券库存'); return; }
   const act=e.target.dataset.act, name=e.target.dataset.name;
   if(!act||!name) return;
   if(act==='add1') state.coupons[name].count = (state.coupons[name].count||0)+1;
