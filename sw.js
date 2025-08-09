@@ -1,4 +1,5 @@
-
+const dateStr = new Date(serverTimestamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+console.log(dateStr); // 按北京时间输出
 const CACHE_NAME = 'family-reward-cache-v3-full-1';
 const ASSETS = [
   './',
