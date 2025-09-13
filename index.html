@@ -263,6 +263,7 @@ const defaultState = {
 function loadState(){ try{ const raw = localStorage.getItem('family_reward_state_pwa_v3'); if(!raw){ saveState(defaultState); return JSON.parse(JSON.stringify(defaultState)); } return JSON.parse(raw);}catch(e){ return JSON.parse(JSON.stringify(defaultState)); } }
 function saveState(s){ localStorage.setItem('family_reward_state_pwa_v3', JSON.stringify(s)); }
 let state = loadState();
+window.state = state;
 
 // 角色 + PIN
 let ROLE = localStorage.getItem('app_role') || (new URLSearchParams(location.search).get('role') || 'parent');
@@ -283,7 +284,7 @@ $('#btnParent').onclick = async ()=>{ const ok = await requirePIN(); if(!ok) ret
 $('#btn_set_pin').onclick = async ()=>{ const p = $('#pinNew').value.trim(); if(!p || p.length<4 || p.length>6) return alert('PIN 需为 4-6 位'); const h = await sha256(p); localStorage.setItem('parent_pin_hash', h); PIN_HASH = h; alert('PIN 已设置/更新'); };
 
 // Tabs
-const TABS = [
+window.tabDefs = [
   {id:'cloud', name:'云同步'},
   {id:'today', name:'今日任务'},
   {id:'approve', name:'审批中心'},
@@ -292,9 +293,9 @@ const TABS = [
   {id:'report', name:'周报图表'},
   {id:'settings', name:'设置/导入导出'}
 ];
-function renderTabs(){
+window.renderTabs = function(){
   const el = $('#tabs'); el.innerHTML='';
-  TABS.forEach((t,i)=>{
+  window.tabDefs.forEach((t,i)=>{
     const b = document.createElement('button'); b.className='tab'+(i===0?' active':''); b.textContent=t.name;
     b.onclick = ()=>{
       $$('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active');
@@ -661,7 +662,7 @@ setInterval(async ()=>{
 
 // 启动
 function init(){
-  renderTabs();
+  window.renderTabs();
   updateRoleUI();
   document.getElementById('maxWeeklyRedeem').value = state.settings.maxWeeklyRedeem;
   document.getElementById('maxDailyPoints').value = state.settings.maxDailyPoints;
