@@ -283,7 +283,7 @@ $('#btnParent').onclick = async ()=>{ const ok = await requirePIN(); if(!ok) ret
 $('#btn_set_pin').onclick = async ()=>{ const p = $('#pinNew').value.trim(); if(!p || p.length<4 || p.length>6) return alert('PIN 需为 4-6 位'); const h = await sha256(p); localStorage.setItem('parent_pin_hash', h); PIN_HASH = h; alert('PIN 已设置/更新'); };
 
 // Tabs
-const TABS = [
+window.tabDefs = [
   {id:'cloud', name:'云同步'},
   {id:'today', name:'今日任务'},
   {id:'approve', name:'审批中心'},
@@ -294,7 +294,7 @@ const TABS = [
 ];
 function renderTabs(){
   const el = $('#tabs'); el.innerHTML='';
-  TABS.forEach((t,i)=>{
+  window.tabDefs.forEach((t,i)=>{
     const b = document.createElement('button'); b.className='tab'+(i===0?' active':''); b.textContent=t.name;
     b.onclick = ()=>{
       $$('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active');
