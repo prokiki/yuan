@@ -263,6 +263,7 @@ const defaultState = {
 function loadState(){ try{ const raw = localStorage.getItem('family_reward_state_pwa_v3'); if(!raw){ saveState(defaultState); return JSON.parse(JSON.stringify(defaultState)); } return JSON.parse(raw);}catch(e){ return JSON.parse(JSON.stringify(defaultState)); } }
 function saveState(s){ localStorage.setItem('family_reward_state_pwa_v3', JSON.stringify(s)); }
 let state = loadState();
+window.state = state;
 
 // 角色 + PIN
 let ROLE = localStorage.getItem('app_role') || (new URLSearchParams(location.search).get('role') || 'parent');
@@ -292,7 +293,7 @@ window.tabDefs = [
   {id:'report', name:'周报图表'},
   {id:'settings', name:'设置/导入导出'}
 ];
-function renderTabs(){
+window.renderTabs = function(){
   const el = $('#tabs'); el.innerHTML='';
   window.tabDefs.forEach((t,i)=>{
     const b = document.createElement('button'); b.className='tab'+(i===0?' active':''); b.textContent=t.name;
@@ -661,7 +662,7 @@ setInterval(async ()=>{
 
 // 启动
 function init(){
-  renderTabs();
+  window.renderTabs();
   updateRoleUI();
   document.getElementById('maxWeeklyRedeem').value = state.settings.maxWeeklyRedeem;
   document.getElementById('maxDailyPoints').value = state.settings.maxDailyPoints;
