@@ -66,6 +66,7 @@ body.kid .parentOnly{display:none !important}
             <button class="btn" id="btn_pull">从云端拉取</button>
             <button class="btn" id="btn_push">推送本地到云</button>
             <label class="row"><input id="auto_sync" type="checkbox"/> 自动拉取（30 秒）</label>
+            <label class="row"><input id="auto_push" type="checkbox"/> 自动推送（变更后）</label>
           </div>
           <div class="muted" id="cloud_info">云端：未连接</div>
         </div>
@@ -280,6 +281,7 @@ function updateRoleUI(){
   $('#tab-settings').style.display = kid ? 'none' : '';
   $('#tab-approve').style.display = kid ? 'none' : '';
   $$('.parentOnly').forEach(el=> el.style.display = kid ? 'none' : '');
+  try{ scheduleAutoPush(); }catch(e){}
 }
 async function requirePIN(){ if(!PIN_HASH) return true; const input = prompt('请输入家长 PIN'); if(!input) return false; const h = await sha256(input); return h===PIN_HASH; }
 $('#btnKid').onclick = async ()=>{ ROLE='kid'; localStorage.setItem('app_role','kid'); updateRoleUI(); alert('已切到孩子端'); };
@@ -583,6 +585,7 @@ const $key = document.getElementById('sb_anon');     // API Key (secret)
 const $family = document.getElementById('family_id');
 const $cloudInfo = document.getElementById('cloud_info');
 const $auto = document.getElementById('auto_sync');
+const $push = document.getElementById('auto_push');
 
 function getCloudCfg(){
   const base = ($url.value.trim() || localStorage.getItem('cf_api_base') || '').trim().replace(/\/$/, '');
@@ -597,6 +600,7 @@ function saveCloudCfg(){
   localStorage.setItem('cf_api_key', key);
   localStorage.setItem('family_id', fid);
   localStorage.setItem('auto_sync', $auto.checked ? '1' : '0');
+  localStorage.setItem('auto_push', $push.checked ? '1' : '0');
 
   // Reset cloud meta when changing family id (avoid wrong optimistic lock).
   const meta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
@@ -708,11 +712,21 @@ async function pushToCloud(){
   const data = await res.json().catch(()=>null);
   if(res.status === 409){
     const curRev = data && data.curRev;
-    alert('推送冲突：云端已更新（curRev=' + curRev + '）。请先“从云端拉取”，再决定是否覆盖。');
+    __autoPushPaused = true;
+    try{ $push.checked = false; localStorage.setItem('auto_push','0'); }catch(_e){}
+    alert('推送冲突：云端已更新（curRev=' + curRev + '）。请先“从云端拉取”，再决定是否覆盖。
+（自动推送已暂停）');
     return;
   }
   if(!res.ok){
     const msg = (data && data.error) ? data.error : ('HTTP ' + res.status);
+    if(res.status === 401){
+      __autoPushPaused = true;
+      try{ $push.checked = false; localStorage.setItem('auto_push','0'); }catch(_e){}
+      alert('推送失败：unauthorized（API Key 错误或已更新）。
+（自动推送已暂停）');
+      return;
+    }
     alert('推送失败：' + msg);
     return;
   }
@@ -726,6 +740,47 @@ async function pushToCloud(){
   $cloudInfo.textContent = '已推送到云端（'+ (data.updated_at ? fmtCN(data.updated_at) : '刚刚') +'）';
 }
 
+
+
+// Auto push: debounce local changes to reduce manual clicking.
+let __autoPushTimer = null;
+let __autoPushLastHash = null;
+let __autoPushPaused = false;
+
+function simpleHash(str){
+  // DJB2
+  let h = 5381;
+  for(let i=0;i<str.length;i++) h = ((h<<5)+h) + str.charCodeAt(i);
+  return String(h>>>0);
+}
+
+function scheduleAutoPush(){
+  if(__autoPushPaused) return;
+  if(ROLE !== 'parent') return;
+  // Only when configured + enabled
+  const { base, key, fid } = getCloudCfg();
+  if(!base || !key || !fid) return;
+  if(!$push || !$push.checked) return;
+
+  // Avoid pushing same content repeatedly
+  const payloadStr = JSON.stringify(state);
+  const h = simpleHash(payloadStr);
+  if(__autoPushLastHash === h) return;
+
+  if(__autoPushTimer) clearTimeout(__autoPushTimer);
+  __autoPushTimer = setTimeout(async ()=>{
+    try{
+      await pushToCloud();
+      __autoPushLastHash = h;
+    }catch(e){
+      // Any unexpected error: pause auto push to avoid loops
+      __autoPushPaused = true;
+      try{ $push.checked = false; localStorage.setItem('auto_push','0'); }catch(_e){}
+      alert('自动推送已暂停：' + (e && e.message ? e.message : '未知错误') + '
+请在“云同步”页手动推送/检查配置。');
+    }
+  }, 4000);
+}
 document.getElementById('btn_pull').onclick = ()=> pullFromCloud();
 document.getElementById('btn_push').onclick = ()=> pushToCloud();
 // Auto sync: pull-only (safer). Push is manual.
@@ -751,6 +806,8 @@ function init(){
   document.getElementById('sb_url').value = localStorage.getItem('cf_api_base') || '';
   document.getElementById('sb_anon').value = localStorage.getItem('cf_api_key') || '';
   document.getElementById('family_id').value = localStorage.getItem('family_id') || '';
+  try{ document.getElementById('auto_sync').checked = (localStorage.getItem('auto_sync')||'0') === '1'; }catch(e){}
+  try{ document.getElementById('auto_push').checked = (localStorage.getItem('auto_push')||'1') !== '0'; }catch(e){}
 
   renderTaskTable(); renderRewards(); renderRedeemLog(); renderCoupons();
 }
