@@ -1,6 +1,6 @@
 # 家庭激励系统（PWA v3 · 云同步版）
 
-一个可直接部署的「家庭激励/奖励」PWA：支持离线缓存、积分与兑换、时间券、周报图表，并可通过 Supabase 实现多设备云同步。
+一个可直接部署的「家庭激励/奖励」PWA：支持离线缓存、积分与兑换、时间券、周报图表，并支持多设备云同步。
 
 - 在线地址（GitHub Pages）：https://prokiki.github.io/yuan/
 - 仓库：https://github.com/prokiki/yuan
@@ -15,7 +15,7 @@
 - 时间券：库存管理 + 使用记录（支持每日使用上限）
 - 周报图表：周总分曲线、任务完成次数
 - PWA：离线缓存、可添加到手机桌面
-- 云同步：Supabase 登录 + 家庭 ID，拉取/推送状态
+- 云同步：Cloudflare Workers + D1（API Base URL + API Key + 家庭 ID），拉取/推送状态
 
 ---
 
@@ -46,42 +46,42 @@
 
 ---
 
-## 云同步（Supabase，可选/当前已停用）
+## 云同步（Cloudflare Workers + D1）
 
-目前你的 Supabase 项目已停用，因此本项目当前以 **本地离线版** 方式运行（数据保存在浏览器本地存储）。
+本项目当前云同步后端为 **Cloudflare Workers + D1**。
 
-如果你未来恢复 Supabase，可按下述步骤重新启用云同步。
+### 1) 在页面里配置
 
-### 1) 初始化 Supabase
+打开网页 → 进入「云同步」页，填写：
 
-1. 在 Supabase 新建项目
-2. 复制 **Project URL** 与 **anon public key**
-3. 打开网页 → 进入「云同步」页 → 填写 URL 与 Key → 保存
-4. 注册/登录（邮箱 + 密码）
-5. 设置一个 `家庭ID`（例如 `yuan-home`）
+- **API Base URL**：例如 `https://family-reward-api.prokiki.workers.dev`
+- **API Key**：在 Cloudflare Worker 里配置的 `API_KEY`（Secret）
+- **家庭ID**：例如 `yuan-home`
 
-### 2) 建表与策略
+然后点击：
 
-在 Supabase → SQL Editor 执行仓库内的：
+- 「保存配置」
+- 首次使用：通常先「从云端拉取」（提示无记录）→ 再「推送本地到云」建立第一条记录
 
-- `schema_fixed.sql`
+> 说明：API Key 会保存在当前设备浏览器的 `localStorage`（仅当前设备）。
 
-### 3) 推荐：增加 rev 字段（更稳的多设备冲突保护）
-
-在 Supabase → SQL Editor 执行一次：
-
-```sql
-alter table public.families_state
-add column if not exists rev bigint not null default 0;
-
-update public.families_state set rev = 1 where rev = 0;
-```
-
-### 4) 同步行为说明（稳定优先）
+### 2) 同步行为说明（稳定优先）
 
 - 自动同步（30 秒）：仅自动「从云端拉取」
-- 推送本地到云：手动点击，且带冲突检测
+- 推送本地到云：手动点击，且带冲突检测（rev 乐观锁）
   - 若提示冲突：先拉取，再决定是否覆盖
+
+### 3) 安全提示
+
+- 不要在聊天/群里发送 `API_KEY`。
+- 如怀疑泄露：直接在 Cloudflare 控制台 **覆盖更新** `API_KEY`，并在各设备上同步更新。
+
+### 4) 后端接口（给排查用）
+
+- `GET /health`：健康检查（不需要 API Key）
+- `GET /pull?family_id=...`：拉取（需要 `X-Api-Key`）
+- `POST /push`：推送（需要 `X-Api-Key`）
+
 
 ---
 
