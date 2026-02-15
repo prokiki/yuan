@@ -7,7 +7,6 @@
 <meta name="theme-color" content="#111827"/>
 <title>家庭激励系统 · v3（角色完整版）</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--brand:#111;--kid:#2563eb}
 *{box-sizing:border-box} body{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial;margin:0;background:#f7f7f8;color:#222}
@@ -49,41 +48,39 @@ body.kid .parentOnly{display:none !important}
 
 <main>
   <section id="tab-cloud" class="active">
-    <div class="card" style="border-color:#f59e0b;background:#fffbeb">
-      <strong>提示：</strong>当前云同步（Supabase）已停用，本页面仅保留为未来恢复云同步的入口。
-      现在请把它当作<strong>本地离线版</strong>使用（数据保存在浏览器本地）。
+    <div class="card" style="border-color:#0ea5e9;background:#ecfeff">
+      <strong>云同步已切换到 Cloudflare Workers + D1</strong>
+      <div class="muted" style="margin-top:6px">说明：这是个人/家庭自用的轻量云同步。API Key 会保存在本机浏览器 localStorage（仅当前设备）。</div>
     </div>
     <div style="height:12px"></div>
+
     <div class="grid cols-2">
       <div class="card">
-        <h2>登录 / 注册</h2>
+        <h2>连接信息</h2>
         <div class="grid">
-          <label>邮箱：<input id="sb_email" type="text" placeholder="you@example.com"/></label>
-          <label>密码：<input id="sb_password" type="password" placeholder="至少 6 位"/></label>
-          <div class="row">
-            <button class="btn" id="sb_signin">登录</button>
-            <button class="btn secondary" id="sb_signup">注册</button>
-            <button class="btn secondary" id="sb_signout">退出登录</button>
-          </div>
-          <div class="muted" id="sb_status">未登录</div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>家庭空间</h2>
-        <div class="grid">
-          <label>Supabase URL：<input id="sb_url" placeholder="https://xxx.supabase.co"/></label>
-          <label>Anon Key：<input id="sb_anon" placeholder="ey..."/></label>
+          <label>API Base URL：<input id="sb_url" placeholder="https://family-reward-api.prokiki.workers.dev"/></label>
+          <label>API Key：<input id="sb_anon" type="password" placeholder="在 Cloudflare 里设置的 API_KEY"/></label>
           <label>家庭ID（英文/数字/中横线）：<input id="family_id" placeholder="如 yuan-home"/></label>
           <div class="row">
             <button class="btn" id="btn_save_cfg">保存配置</button>
             <button class="btn" id="btn_pull">从云端拉取</button>
             <button class="btn" id="btn_push">推送本地到云</button>
-            <label class="row"><input id="auto_sync" type="checkbox"/> 自动同步（30 秒）</label>
+            <label class="row"><input id="auto_sync" type="checkbox"/> 自动拉取（30 秒）</label>
           </div>
           <div class="muted" id="cloud_info">云端：未连接</div>
         </div>
       </div>
+
+      <div class="card">
+        <h2>安全提示</h2>
+        <ul class="muted" style="margin:0; padding-left:18px; line-height:1.7">
+          <li>不要把 API Key 发到群里/聊天里；泄露后请立刻在 Cloudflare 里覆盖更新。</li>
+          <li>孩子端不允许拉取/推送（避免误覆盖）。</li>
+          <li>自动同步是“只拉取”，推送请手动点按钮。</li>
+        </ul>
+      </div>
     </div>
+
     <div class="card mt16">
       <h2>家长 PIN</h2>
       <div class="row">
@@ -92,6 +89,7 @@ body.kid .parentOnly{display:none !important}
         <span class="muted">进入家长端、设置、云同步等敏感操作会要求 PIN</span>
       </div>
     </div>
+
     <div class="card mt16">
       <h2>审批模式</h2>
       <label class="row"><input id="needApproval" type="checkbox"/> 开启“孩子打卡需家长审批”</label>
@@ -579,92 +577,84 @@ document.getElementById('resetBtn').onclick = ()=>{
   if(confirm('确定清空所有数据？此操作不可撤销')){ localStorage.removeItem('family_reward_state_pwa_v3'); state = JSON.parse(JSON.stringify(defaultState)); init(); }
 };
 
-// ======= 云同步（Supabase） =======
-let sb = null;
-const $email = document.getElementById('sb_email');
-const $pass = document.getElementById('sb_password');
-const $status = document.getElementById('sb_status');
-const $url = document.getElementById('sb_url');
-const $anon = document.getElementById('sb_anon');
+// ======= 云同步（Cloudflare Workers + D1） =======
+const $url = document.getElementById('sb_url');      // API Base URL
+const $key = document.getElementById('sb_anon');     // API Key (secret)
 const $family = document.getElementById('family_id');
 const $cloudInfo = document.getElementById('cloud_info');
 const $auto = document.getElementById('auto_sync');
 
-// Cloud sync is currently disabled in this deployment.
-// Keep UI/logic as a future entrypoint, but avoid confusing users.
-const CLOUD_SYNC_DISABLED = true;
-if (CLOUD_SYNC_DISABLED) {
-  try {
-    // Hide auto sync by default
-    $auto.checked = false;
-    $auto.disabled = true;
-    localStorage.setItem('auto_sync', '0');
-  } catch {}
+function getCloudCfg(){
+  const base = ($url.value.trim() || localStorage.getItem('cf_api_base') || '').trim().replace(/\/$/, '');
+  const key = ($key.value.trim() || localStorage.getItem('cf_api_key') || '').trim();
+  const fid = ($family.value.trim() || localStorage.getItem('family_id') || '').trim();
+  return { base, key, fid };
 }
 
-function initSupabase(){
-  const url = localStorage.getItem('sb_url') || $url.value.trim();
-  const anon = localStorage.getItem('sb_anon') || $anon.value.trim();
-  if(!url || !anon){ return; }
-  sb = window.supabase.createClient(url, anon);
-  sb.auth.getUser().then(({data})=>{ if(data && data.user){ $status.textContent = '已登录：' + (data.user.email||''); } });
-}
-document.getElementById('btn_save_cfg').onclick = ()=>{
-  localStorage.setItem('sb_url', $url.value.trim());
-  localStorage.setItem('sb_anon', $anon.value.trim());
-  localStorage.setItem('family_id', $family.value.trim());
+function saveCloudCfg(){
+  const { base, key, fid } = getCloudCfg();
+  localStorage.setItem('cf_api_base', base);
+  localStorage.setItem('cf_api_key', key);
+  localStorage.setItem('family_id', fid);
   localStorage.setItem('auto_sync', $auto.checked ? '1' : '0');
+
   // Reset cloud meta when changing family id (avoid wrong optimistic lock).
   const meta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
-  if(meta.family_id && meta.family_id !== $family.value.trim()) localStorage.removeItem('cloud_meta');
-  alert('配置已保存'); location.reload();
+  if(meta.family_id && meta.family_id !== fid) localStorage.removeItem('cloud_meta');
+}
+
+document.getElementById('btn_save_cfg').onclick = ()=>{
+  saveCloudCfg();
+  alert('配置已保存');
 };
-document.getElementById('sb_signin').onclick = async ()=>{
-  try{
-    initSupabase();
-    const { data, error } = await sb.auth.signInWithPassword({ email:$email.value.trim(), password:$pass.value });
-    if(error) throw error;
-    $status.textContent = '已登录：' + (data.user.email||'');
-    localStorage.setItem('sb_email', $email.value.trim());
-  }catch(e){ alert('登录失败：'+e.message); }
-};
-document.getElementById('sb_signup').onclick = async ()=>{
-  try{
-    initSupabase();
-    const { data, error } = await sb.auth.signUp({ email:$email.value.trim(), password:$pass.value });
-    if(error) throw error;
-    $status.textContent = '注册成功，请登录';
-  }catch(e){ alert('注册失败：'+e.message); }
-};
-document.getElementById('sb_signout').onclick = async ()=>{
-  if(!sb) initSupabase();
-  await sb.auth.signOut();
-  $status.textContent = '未登录';
-};
+
+async function cfFetch(path, opts={}){
+  const { base, key } = getCloudCfg();
+  if(!base) throw new Error('请先设置 API Base URL');
+  const headers = Object.assign({}, opts.headers || {});
+  // Only /health is allowed without auth.
+  headers['X-Api-Key'] = key || '';
+  return fetch(base + path, Object.assign({}, opts, { headers }));
+}
 
 async function pullFromCloud(){
   if(ROLE==='kid'){ alert('孩子端不允许云拉取'); return; }
-  if(!sb) initSupabase();
-  const fid = ($family.value.trim() || localStorage.getItem('family_id') || '').trim();
+  const { fid } = getCloudCfg();
   if(!fid){ alert('请先设置家庭ID'); return; }
 
-  const { data, error } = await sb.from('families_state').select('*').eq('family_id', fid).maybeSingle();
-  if(error){ alert('拉取失败：'+error.message); return; }
-  if(!data){ $cloudInfo.textContent = '云端：无记录（首次使用，请推送）'; return; }
+  const res = await cfFetch('/pull?family_id=' + encodeURIComponent(fid), { method:'GET' });
+  const data = await res.json().catch(()=>null);
+  if(!res.ok){
+    const msg = (data && data.error) ? data.error : ('HTTP ' + res.status);
+    alert('拉取失败：' + msg);
+    return;
+  }
 
-  const serverUpdatedMs = new Date(data.updated_at).getTime();
-  const serverUpdatedIso = data.updated_at;
+  if(!data.found){
+    $cloudInfo.textContent = '云端：无记录（首次使用，请推送）';
+    return;
+  }
+
+  const serverUpdatedIso = data.updated_at || null;
+  const serverUpdatedMs = serverUpdatedIso ? new Date(serverUpdatedIso).getTime() : 0;
   const serverRev = Number(data.rev || 0);
 
   const localMeta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
-  const localUpdatedMs = Number(localMeta.updated_at_ms||0);
   const localRev = Number(localMeta.rev||0);
+  const localUpdatedMs = Number(localMeta.updated_at_ms||0);
 
-  // Prefer rev comparison if present; else fallback to updated_at.
   const isNewer = serverRev ? (serverRev > localRev) : (serverUpdatedMs > localUpdatedMs);
   if(!isNewer){ $cloudInfo.textContent = '云端较旧/相同，无需覆盖'; return; }
 
-  state = Object.assign({}, state, data.state_json);
+  let incoming = {};
+  try{
+    incoming = JSON.parse(data.state_json || '{}');
+  }catch(e){
+    alert('拉取失败：云端 state_json 不是合法 JSON');
+    return;
+  }
+
+  state = Object.assign({}, state, incoming);
   saveState(state);
   localStorage.setItem('cloud_meta', JSON.stringify({
     family_id: fid,
@@ -672,120 +662,56 @@ async function pullFromCloud(){
     updated_at_iso: serverUpdatedIso,
     rev: serverRev
   }));
+
   init();
-  $cloudInfo.textContent = '已从云端拉取并覆盖本地（'+ fmtCN(data.updated_at) +'）';
+  $cloudInfo.textContent = '已从云端拉取并覆盖本地（'+ (serverUpdatedIso ? fmtCN(serverUpdatedIso) : '未知时间') +'）';
 }
 
 async function pushToCloud(){
   if(ROLE==='kid'){ alert('孩子端不允许云推送'); return; }
-  if(!sb) initSupabase();
-  const fid = ($family.value.trim() || localStorage.getItem('family_id') || '').trim();
+  const { fid } = getCloudCfg();
   if(!fid){ alert('请先设置家庭ID'); return; }
 
   const localMeta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
-  const nowIso = new Date().toISOString();
+  const expectedRev = (localMeta.family_id === fid) ? Number(localMeta.rev || 0) : 0;
 
-  // If we have seen the cloud state before, try an optimistic update.
-  if(localMeta.family_id === fid && (localMeta.rev || localMeta.updated_at_iso)){
-    // 1) Prefer rev-based optimistic locking if column exists.
-    if(localMeta.rev){
-      const nextRev = Number(localMeta.rev) + 1;
-      const { data, error } = await sb
-        .from('families_state')
-        .update({ state_json: state, updated_at: nowIso, rev: nextRev })
-        .eq('family_id', fid)
-        .eq('rev', Number(localMeta.rev))
-        .select()
-        .maybeSingle();
+  const payload = {
+    family_id: fid,
+    state_json: JSON.stringify(state),
+    expectedRev
+  };
 
-      if(!error && data){
-        localStorage.setItem('cloud_meta', JSON.stringify({
-          family_id: fid,
-          updated_at_ms: new Date(data.updated_at).getTime(),
-          updated_at_iso: data.updated_at,
-          rev: Number(data.rev || nextRev)
-        }));
-        $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data.updated_at) +'）';
-        return;
-      }
+  const res = await cfFetch('/push', {
+    method:'POST',
+    headers: { 'content-type':'application/json' },
+    body: JSON.stringify(payload)
+  });
 
-      // If rev column doesn't exist, fall through to updated_at locking.
-      if(error && /column .*rev/i.test(error.message)){
-        // continue
-      } else {
-        // Conflict (0 rows updated) or other error
-        if(!data) return alert('推送冲突：云端已被其它设备更新，请先“从云端拉取”，再决定是否覆盖。');
-        return alert('推送失败：'+error.message);
-      }
-    }
-
-    // 2) Fallback: updated_at optimistic locking
-    if(localMeta.updated_at_iso){
-      const { data, error } = await sb
-        .from('families_state')
-        .update({ state_json: state, updated_at: nowIso })
-        .eq('family_id', fid)
-        .eq('updated_at', localMeta.updated_at_iso)
-        .select()
-        .maybeSingle();
-
-      if(!error && data){
-        localStorage.setItem('cloud_meta', JSON.stringify({
-          family_id: fid,
-          updated_at_ms: new Date(data.updated_at).getTime(),
-          updated_at_iso: data.updated_at,
-          rev: Number(data.rev || 0)
-        }));
-        $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data.updated_at) +'）';
-        return;
-      }
-      if(!data) return alert('推送冲突：云端已被其它设备更新，请先“从云端拉取”，再决定是否覆盖。');
-      return alert('推送失败：'+error.message);
-    }
+  const data = await res.json().catch(()=>null);
+  if(res.status === 409){
+    const curRev = data && data.curRev;
+    alert('推送冲突：云端已更新（curRev=' + curRev + '）。请先“从云端拉取”，再决定是否覆盖。');
+    return;
   }
-
-  // First push (create) or no local meta: use upsert.
-  const payload = { family_id: fid, state_json: state, updated_at: nowIso, rev: 1 };
-  const { data, error } = await sb.from('families_state').upsert(payload).select().maybeSingle();
-  if(error){
-    // If rev column doesn't exist on server, retry without it.
-    if(/column .*rev/i.test(error.message)){
-      const { data: data2, error: error2 } = await sb.from('families_state').upsert({ family_id: fid, state_json: state, updated_at: nowIso }).select().maybeSingle();
-      if(error2) return alert('推送失败：'+error2.message);
-      localStorage.setItem('cloud_meta', JSON.stringify({
-        family_id: fid,
-        updated_at_ms: new Date(data2.updated_at).getTime(),
-        updated_at_iso: data2.updated_at,
-        rev: Number(data2.rev || 0)
-      }));
-      $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data2.updated_at) +'）';
-      return;
-    }
-    alert('推送失败：'+error.message);
+  if(!res.ok){
+    const msg = (data && data.error) ? data.error : ('HTTP ' + res.status);
+    alert('推送失败：' + msg);
     return;
   }
 
   localStorage.setItem('cloud_meta', JSON.stringify({
     family_id: fid,
-    updated_at_ms: new Date(data.updated_at).getTime(),
-    updated_at_iso: data.updated_at,
-    rev: Number(data.rev || 1)
+    updated_at_ms: data.updated_at ? new Date(data.updated_at).getTime() : Date.now(),
+    updated_at_iso: data.updated_at || new Date().toISOString(),
+    rev: Number(data.rev || (expectedRev+1))
   }));
-  $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data.updated_at) +'）';
+  $cloudInfo.textContent = '已推送到云端（'+ (data.updated_at ? fmtCN(data.updated_at) : '刚刚') +'）';
 }
-document.getElementById('btn_pull').onclick = ()=>{
-  if(CLOUD_SYNC_DISABLED) return alert('云同步已停用（Supabase 项目当前不可用）。');
-  return pullFromCloud();
-};
 
-document.getElementById('btn_push').onclick = ()=>{
-  if(CLOUD_SYNC_DISABLED) return alert('云同步已停用（Supabase 项目当前不可用）。');
-  return pushToCloud();
-};
-
+document.getElementById('btn_pull').onclick = ()=> pullFromCloud();
+document.getElementById('btn_push').onclick = ()=> pushToCloud();
 // Auto sync: pull-only (safer). Push is manual.
 setInterval(async ()=>{
-  if(CLOUD_SYNC_DISABLED) return;
   if(ROLE==='parent' && ($auto?.checked)){
     try{ await pullFromCloud(); }catch(e){}
   }
@@ -804,10 +730,9 @@ function init(){
   document.getElementById('todayDate').textContent = todayStr();
 
   // 云配置回填
-  document.getElementById('sb_url').value = localStorage.getItem('sb_url') || '';
-  document.getElementById('sb_anon').value = localStorage.getItem('sb_anon') || '';
+  document.getElementById('sb_url').value = localStorage.getItem('cf_api_base') || '';
+  document.getElementById('sb_anon').value = localStorage.getItem('cf_api_key') || '';
   document.getElementById('family_id').value = localStorage.getItem('family_id') || '';
-  document.getElementById('sb_email').value = localStorage.getItem('sb_email') || '';
 
   renderTaskTable(); renderRewards(); renderRedeemLog(); renderCoupons();
 }
