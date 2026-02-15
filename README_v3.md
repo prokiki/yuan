@@ -7,6 +7,8 @@
 - 方式 B：Vercel/Netlify（拖拽上传或连 Git 自动部署）
 首次打开后，请 **强制刷新** 一次（确保 SW 安装）
 
+> PWA 清单文件：项目以 `manifest.webmanifest` 为准（`index.html` 已引用该文件）。
+
 ## 二、Supabase 初始化
 1. 在 Supabase 新建项目，复制 **Project URL** 与 **anon public key**
 2. 打开网页 → 切到“云同步”页，在页面上填：URL 与 Anon Key → 保存配置（存到本地）
