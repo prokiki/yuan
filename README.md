@@ -50,6 +50,67 @@
 
 本项目当前云同步后端为 **Cloudflare Workers + D1**。
 
+### 0) 后端部署（Cloudflare 控制台）
+
+> 推荐直接用 Cloudflare Dashboard（控制台）完成，避免 wrangler/CI 因 entrypoint 配置出错。
+
+**A. 创建 Worker**
+
+1. Cloudflare → Workers & Pages → Create application → Worker（Hello World 也行）
+2. Worker 名称例如：`family-reward-api`
+3. 进入 Edit code，把 Worker 代码替换为本仓库当前版本对应的 API 实现（见项目内 `index.html` 云同步逻辑所需：`/health`、`/pull`、`/push`）
+4. 点击 Deploy
+
+**B. 创建/准备 D1 数据库**
+
+1. Cloudflare → Storage & databases → D1
+2. 创建数据库（例如：`family-reward`）
+3. 在 D1 Console 执行建表：
+
+```sql
+create table if not exists families_state (
+  family_id text primary key,
+  state_json text not null,
+  updated_at text not null,
+  rev integer not null default 0
+);
+
+create index if not exists idx_families_updated_at on families_state(updated_at);
+```
+
+**C. 绑定 D1 到 Worker**
+
+Worker → Bindings → Add binding → D1 database：
+
+- Variable name：`DB`
+- Database：选择 `family-reward`
+
+**D. 设置 Secret（API_KEY）**
+
+Worker → Settings → Variables and Secrets：
+
+- Add → Type 选 **Secret**
+- Name：`API_KEY`
+- Value：自己生成一个足够长的随机串
+
+> 注意：不要把 key 发到聊天/群里；如泄露直接在这里覆盖更新。
+
+**E. 自测（后端）**
+
+- `GET /health` 不需要 key：
+
+```bash
+curl -sS https://<你的worker域名>/health
+```
+
+- `/pull` `/push` 需要 key（Header：`X-Api-Key`）：
+
+```bash
+curl -sS -H "X-Api-Key: <你的API_KEY>" "https://<你的worker域名>/pull?family_id=test"
+```
+
+
+
 ### 1) 在页面里配置
 
 打开网页 → 进入「云同步」页，填写：
