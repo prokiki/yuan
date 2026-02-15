@@ -49,6 +49,11 @@ body.kid .parentOnly{display:none !important}
 
 <main>
   <section id="tab-cloud" class="active">
+    <div class="card" style="border-color:#f59e0b;background:#fffbeb">
+      <strong>提示：</strong>当前云同步（Supabase）已停用，本页面仅保留为未来恢复云同步的入口。
+      现在请把它当作<strong>本地离线版</strong>使用（数据保存在浏览器本地）。
+    </div>
+    <div style="height:12px"></div>
     <div class="grid cols-2">
       <div class="card">
         <h2>登录 / 注册</h2>
@@ -585,6 +590,18 @@ const $family = document.getElementById('family_id');
 const $cloudInfo = document.getElementById('cloud_info');
 const $auto = document.getElementById('auto_sync');
 
+// Cloud sync is currently disabled in this deployment.
+// Keep UI/logic as a future entrypoint, but avoid confusing users.
+const CLOUD_SYNC_DISABLED = true;
+if (CLOUD_SYNC_DISABLED) {
+  try {
+    // Hide auto sync by default
+    $auto.checked = false;
+    $auto.disabled = true;
+    localStorage.setItem('auto_sync', '0');
+  } catch {}
+}
+
 function initSupabase(){
   const url = localStorage.getItem('sb_url') || $url.value.trim();
   const anon = localStorage.getItem('sb_anon') || $anon.value.trim();
@@ -756,10 +773,19 @@ async function pushToCloud(){
   }));
   $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data.updated_at) +'）';
 }
-document.getElementById('btn_pull').onclick = pullFromCloud;
-document.getElementById('btn_push').onclick = pushToCloud;
+document.getElementById('btn_pull').onclick = ()=>{
+  if(CLOUD_SYNC_DISABLED) return alert('云同步已停用（Supabase 项目当前不可用）。');
+  return pullFromCloud();
+};
+
+document.getElementById('btn_push').onclick = ()=>{
+  if(CLOUD_SYNC_DISABLED) return alert('云同步已停用（Supabase 项目当前不可用）。');
+  return pushToCloud();
+};
+
 // Auto sync: pull-only (safer). Push is manual.
 setInterval(async ()=>{
+  if(CLOUD_SYNC_DISABLED) return;
   if(ROLE==='parent' && ($auto?.checked)){
     try{ await pullFromCloud(); }catch(e){}
   }
