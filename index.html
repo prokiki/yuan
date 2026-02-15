@@ -603,8 +603,9 @@ function saveCloudCfg(){
   if(meta.family_id && meta.family_id !== fid) localStorage.removeItem('cloud_meta');
 }
 
-document.getElementById('btn_save_cfg').onclick = ()=>{
+document.getElementById('btn_save_cfg').onclick = async ()=>{
   saveCloudCfg();
+  await testCloudConnection();
   alert('配置已保存');
 };
 
@@ -615,6 +616,23 @@ async function cfFetch(path, opts={}){
   // Only /health is allowed without auth.
   headers['X-Api-Key'] = key || '';
   return fetch(base + path, Object.assign({}, opts, { headers }));
+
+
+async function testCloudConnection(){
+  const { base } = getCloudCfg();
+  if(!base){ $cloudInfo.textContent = '云端：未连接（未配置）'; return; }
+  try{
+    const res = await fetch(base.replace(/\/$/, '') + '/health', { method:'GET' });
+    const data = await res.json().catch(()=>null);
+    if(res.ok && data && data.ok){
+      $cloudInfo.textContent = '云端：已连接（'+ (data.service||'ok') +'）';
+    }else{
+      $cloudInfo.textContent = '云端：未连接（/health 返回异常）';
+    }
+  }catch(e){
+    $cloudInfo.textContent = '云端：未连接（网络错误）';
+  }
+}
 }
 
 async function pullFromCloud(){
