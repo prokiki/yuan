@@ -597,6 +597,9 @@ document.getElementById('btn_save_cfg').onclick = ()=>{
   localStorage.setItem('sb_anon', $anon.value.trim());
   localStorage.setItem('family_id', $family.value.trim());
   localStorage.setItem('auto_sync', $auto.checked ? '1' : '0');
+  // Reset cloud meta when changing family id (avoid wrong optimistic lock).
+  const meta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
+  if(meta.family_id && meta.family_id !== $family.value.trim()) localStorage.removeItem('cloud_meta');
   alert('配置已保存'); location.reload();
 };
 document.getElementById('sb_signin').onclick = async ()=>{
@@ -627,36 +630,138 @@ async function pullFromCloud(){
   if(!sb) initSupabase();
   const fid = ($family.value.trim() || localStorage.getItem('family_id') || '').trim();
   if(!fid){ alert('请先设置家庭ID'); return; }
+
   const { data, error } = await sb.from('families_state').select('*').eq('family_id', fid).maybeSingle();
   if(error){ alert('拉取失败：'+error.message); return; }
   if(!data){ $cloudInfo.textContent = '云端：无记录（首次使用，请推送）'; return; }
-  const serverUpdated = new Date(data.updated_at).getTime();
+
+  const serverUpdatedMs = new Date(data.updated_at).getTime();
+  const serverUpdatedIso = data.updated_at;
+  const serverRev = Number(data.rev || 0);
+
   const localMeta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
-  const localUpdated = Number(localMeta.updated_at||0);
-  if(serverUpdated <= localUpdated){ $cloudInfo.textContent = '云端较旧/相同，无需覆盖'; return; }
+  const localUpdatedMs = Number(localMeta.updated_at_ms||0);
+  const localRev = Number(localMeta.rev||0);
+
+  // Prefer rev comparison if present; else fallback to updated_at.
+  const isNewer = serverRev ? (serverRev > localRev) : (serverUpdatedMs > localUpdatedMs);
+  if(!isNewer){ $cloudInfo.textContent = '云端较旧/相同，无需覆盖'; return; }
+
   state = Object.assign({}, state, data.state_json);
   saveState(state);
-  localStorage.setItem('cloud_meta', JSON.stringify({family_id:fid, updated_at:serverUpdated}));
+  localStorage.setItem('cloud_meta', JSON.stringify({
+    family_id: fid,
+    updated_at_ms: serverUpdatedMs,
+    updated_at_iso: serverUpdatedIso,
+    rev: serverRev
+  }));
   init();
   $cloudInfo.textContent = '已从云端拉取并覆盖本地（'+ fmtCN(data.updated_at) +'）';
 }
+
 async function pushToCloud(){
   if(ROLE==='kid'){ alert('孩子端不允许云推送'); return; }
   if(!sb) initSupabase();
   const fid = ($family.value.trim() || localStorage.getItem('family_id') || '').trim();
   if(!fid){ alert('请先设置家庭ID'); return; }
-  const payload = { family_id: fid, state_json: state, updated_at: new Date().toISOString() };
+
+  const localMeta = JSON.parse(localStorage.getItem('cloud_meta')||'{}');
+  const nowIso = new Date().toISOString();
+
+  // If we have seen the cloud state before, try an optimistic update.
+  if(localMeta.family_id === fid && (localMeta.rev || localMeta.updated_at_iso)){
+    // 1) Prefer rev-based optimistic locking if column exists.
+    if(localMeta.rev){
+      const nextRev = Number(localMeta.rev) + 1;
+      const { data, error } = await sb
+        .from('families_state')
+        .update({ state_json: state, updated_at: nowIso, rev: nextRev })
+        .eq('family_id', fid)
+        .eq('rev', Number(localMeta.rev))
+        .select()
+        .maybeSingle();
+
+      if(!error && data){
+        localStorage.setItem('cloud_meta', JSON.stringify({
+          family_id: fid,
+          updated_at_ms: new Date(data.updated_at).getTime(),
+          updated_at_iso: data.updated_at,
+          rev: Number(data.rev || nextRev)
+        }));
+        $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data.updated_at) +'）';
+        return;
+      }
+
+      // If rev column doesn't exist, fall through to updated_at locking.
+      if(error && /column .*rev/i.test(error.message)){
+        // continue
+      } else {
+        // Conflict (0 rows updated) or other error
+        if(!data) return alert('推送冲突：云端已被其它设备更新，请先“从云端拉取”，再决定是否覆盖。');
+        return alert('推送失败：'+error.message);
+      }
+    }
+
+    // 2) Fallback: updated_at optimistic locking
+    if(localMeta.updated_at_iso){
+      const { data, error } = await sb
+        .from('families_state')
+        .update({ state_json: state, updated_at: nowIso })
+        .eq('family_id', fid)
+        .eq('updated_at', localMeta.updated_at_iso)
+        .select()
+        .maybeSingle();
+
+      if(!error && data){
+        localStorage.setItem('cloud_meta', JSON.stringify({
+          family_id: fid,
+          updated_at_ms: new Date(data.updated_at).getTime(),
+          updated_at_iso: data.updated_at,
+          rev: Number(data.rev || 0)
+        }));
+        $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data.updated_at) +'）';
+        return;
+      }
+      if(!data) return alert('推送冲突：云端已被其它设备更新，请先“从云端拉取”，再决定是否覆盖。');
+      return alert('推送失败：'+error.message);
+    }
+  }
+
+  // First push (create) or no local meta: use upsert.
+  const payload = { family_id: fid, state_json: state, updated_at: nowIso, rev: 1 };
   const { data, error } = await sb.from('families_state').upsert(payload).select().maybeSingle();
-  if(error){ alert('推送失败：'+error.message); return; }
-  const ts = new Date(data.updated_at).getTime();
-  localStorage.setItem('cloud_meta', JSON.stringify({family_id:fid, updated_at:ts}));
+  if(error){
+    // If rev column doesn't exist on server, retry without it.
+    if(/column .*rev/i.test(error.message)){
+      const { data: data2, error: error2 } = await sb.from('families_state').upsert({ family_id: fid, state_json: state, updated_at: nowIso }).select().maybeSingle();
+      if(error2) return alert('推送失败：'+error2.message);
+      localStorage.setItem('cloud_meta', JSON.stringify({
+        family_id: fid,
+        updated_at_ms: new Date(data2.updated_at).getTime(),
+        updated_at_iso: data2.updated_at,
+        rev: Number(data2.rev || 0)
+      }));
+      $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data2.updated_at) +'）';
+      return;
+    }
+    alert('推送失败：'+error.message);
+    return;
+  }
+
+  localStorage.setItem('cloud_meta', JSON.stringify({
+    family_id: fid,
+    updated_at_ms: new Date(data.updated_at).getTime(),
+    updated_at_iso: data.updated_at,
+    rev: Number(data.rev || 1)
+  }));
   $cloudInfo.textContent = '已推送到云端（'+ fmtCN(data.updated_at) +'）';
 }
 document.getElementById('btn_pull').onclick = pullFromCloud;
 document.getElementById('btn_push').onclick = pushToCloud;
+// Auto sync: pull-only (safer). Push is manual.
 setInterval(async ()=>{
   if(ROLE==='parent' && ($auto?.checked)){
-    try{ await pullFromCloud(); await pushToCloud(); }catch(e){}
+    try{ await pullFromCloud(); }catch(e){}
   }
 }, 30000);
 
