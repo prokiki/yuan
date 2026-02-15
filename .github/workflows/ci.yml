@@ -1,8 +1,15 @@
 name: CI
 on: [push, pull_request]
+
 jobs:
   basic-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: ls -la
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sanity checks
+        run: node tools/check.js

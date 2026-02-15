@@ -19,6 +19,19 @@
 ## 三、数据库结构（schema_fixed.sql）
 见本包 `schema_fixed.sql`，已按 SELECT/INSERT/UPDATE/DELETE 分别创建策略（避免 42601 错误）。
 
+### （推荐）增加 rev 字段：避免多设备互相覆盖
+当前前端已支持“乐观锁”推送：优先使用 `rev`（若数据库有该字段），否则退化为用 `updated_at` 做冲突检测。
+
+建议你在 Supabase SQL Editor 执行（只需一次）：
+
+```sql
+alter table public.families_state
+add column if not exists rev bigint not null default 0;
+
+-- 若表里已有数据，初始化 rev
+update public.families_state set rev = 1 where rev = 0;
+```
+
 ## 四、常见问题
 - 没看到“云同步”标签：强制刷新（Cmd+Shift+R）或 DevTools → Application → Unregister SW；确认 `index.html` 已包含 supabase-js
 - 推送/拉取失败：确认已执行 `schema_fixed.sql`，且已登录；检查 URL/Key 是否正确
