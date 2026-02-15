@@ -776,8 +776,7 @@ function scheduleAutoPush(){
       // Any unexpected error: pause auto push to avoid loops
       __autoPushPaused = true;
       try{ $push.checked = false; localStorage.setItem('auto_push','0'); }catch(_e){}
-      alert('自动推送已暂停：' + (e && e.message ? e.message : '未知错误') + '
-请在“云同步”页手动推送/检查配置。');
+      alert('自动推送已暂停：' + (e && e.message ? e.message : '未知错误') + '\n请在“云同步”页手动推送/检查配置。');
     }
   }, 4000);
 }
