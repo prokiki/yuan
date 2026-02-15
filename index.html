@@ -714,8 +714,7 @@ async function pushToCloud(){
     const curRev = data && data.curRev;
     __autoPushPaused = true;
     try{ $push.checked = false; localStorage.setItem('auto_push','0'); }catch(_e){}
-    alert('推送冲突：云端已更新（curRev=' + curRev + '）。请先“从云端拉取”，再决定是否覆盖。
-（自动推送已暂停）');
+    alert('推送冲突：云端已更新（curRev=' + curRev + '）。请先“从云端拉取”，再决定是否覆盖。\n（自动推送已暂停）');
     return;
   }
   if(!res.ok){
@@ -723,8 +722,7 @@ async function pushToCloud(){
     if(res.status === 401){
       __autoPushPaused = true;
       try{ $push.checked = false; localStorage.setItem('auto_push','0'); }catch(_e){}
-      alert('推送失败：unauthorized（API Key 错误或已更新）。
-（自动推送已暂停）');
+      alert('推送失败：unauthorized（API Key 错误或已更新）。\n（自动推送已暂停）');
       return;
     }
     alert('推送失败：' + msg);
